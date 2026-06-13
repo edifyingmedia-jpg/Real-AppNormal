@@ -1,5 +1,5 @@
 import { useParams, Link } from "wouter";
-import { useGetProject, useGetAnthropicConversation, useListProjectFiles } from "@workspace/api-client-react";
+import { useGetProject, useListProjectFiles } from "@workspace/api-client-react";
 import { ChatPanel } from "@/components/chat-panel";
 import { CodeEditor } from "@/components/code-editor";
 import { PreviewPanel } from "@/components/preview-panel";
