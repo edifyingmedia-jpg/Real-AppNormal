@@ -3,16 +3,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateProject, useCreateAnthropicConversation, useUpdateProject } from "@workspace/api-client-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListProjectsQueryKey } from "@workspace/api-client-react";
 
-export function NewProjectDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+interface NewProjectDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  defaultName?: string;
+  defaultDescription?: string;
+}
+
+export function NewProjectDialog({ open, onOpenChange, defaultName = "", defaultDescription = "" }: NewProjectDialogProps) {
+  const [name, setName] = useState(defaultName);
+  const [description, setDescription] = useState(defaultDescription);
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (open) {
+      setName(defaultName);
+      setDescription(defaultDescription);
+    }
+  }, [open, defaultName, defaultDescription]);
 
   const createProject = useCreateProject();
   const createConversation = useCreateAnthropicConversation();
