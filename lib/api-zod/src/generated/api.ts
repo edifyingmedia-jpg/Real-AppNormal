@@ -75,7 +75,8 @@ export const UpdateProjectParams = zod.object({
 
 export const UpdateProjectBody = zod.object({
   "name": zod.string().optional(),
-  "description": zod.string().optional()
+  "description": zod.string().optional(),
+  "conversationId": zod.number().nullish()
 })
 
 export const UpdateProjectResponse = zod.object({

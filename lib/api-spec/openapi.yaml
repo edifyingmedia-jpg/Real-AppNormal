@@ -408,6 +408,8 @@ components:
           type: string
         description:
           type: string
+        conversationId:
+          type: ["integer", "null"]
 
     ProjectFile:
       type: object

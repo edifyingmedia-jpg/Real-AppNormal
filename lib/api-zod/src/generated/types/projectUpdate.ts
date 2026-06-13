@@ -9,4 +9,6 @@
 export interface ProjectUpdate {
   name?: string;
   description?: string;
+  /** @nullable */
+  conversationId?: number | null;
 }
