@@ -25,6 +25,10 @@ export const ListProjectsResponseItem = zod.object({
   "name": zod.string(),
   "description": zod.string().nullish(),
   "conversationId": zod.number().nullish(),
+  "isPublished": zod.boolean(),
+  "githubRepo": zod.string().nullish(),
+  "supabaseUrl": zod.string().nullish(),
+  "stripePublishableKey": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -52,6 +56,10 @@ export const GetProjectResponse = zod.object({
   "name": zod.string(),
   "description": zod.string().nullish(),
   "conversationId": zod.number().nullish(),
+  "isPublished": zod.boolean(),
+  "githubRepo": zod.string().nullish(),
+  "supabaseUrl": zod.string().nullish(),
+  "stripePublishableKey": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date(),
   "files": zod.array(zod.object({
@@ -84,6 +92,10 @@ export const UpdateProjectResponse = zod.object({
   "name": zod.string(),
   "description": zod.string().nullish(),
   "conversationId": zod.number().nullish(),
+  "isPublished": zod.boolean(),
+  "githubRepo": zod.string().nullish(),
+  "supabaseUrl": zod.string().nullish(),
+  "stripePublishableKey": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -161,6 +173,75 @@ export const UpdateProjectFileResponse = zod.object({
 export const DeleteProjectFileParams = zod.object({
   "id": zod.coerce.number(),
   "fileId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Publish or unpublish a project
+ */
+export const PublishProjectParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const PublishProjectBody = zod.object({
+  "isPublished": zod.boolean()
+})
+
+export const PublishProjectResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "conversationId": zod.number().nullish(),
+  "isPublished": zod.boolean(),
+  "githubRepo": zod.string().nullish(),
+  "supabaseUrl": zod.string().nullish(),
+  "stripePublishableKey": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update project integration settings
+ */
+export const UpdateProjectSettingsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateProjectSettingsBody = zod.object({
+  "githubRepo": zod.string().nullish(),
+  "githubToken": zod.string().nullish(),
+  "supabaseUrl": zod.string().nullish(),
+  "supabaseAnonKey": zod.string().nullish(),
+  "stripePublishableKey": zod.string().nullish()
+})
+
+export const UpdateProjectSettingsResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "conversationId": zod.number().nullish(),
+  "isPublished": zod.boolean(),
+  "githubRepo": zod.string().nullish(),
+  "supabaseUrl": zod.string().nullish(),
+  "stripePublishableKey": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Push project files to a GitHub repository
+ */
+export const PushProjectToGithubParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const PushProjectToGithubResponse = zod.object({
+  "success": zod.boolean(),
+  "repoUrl": zod.string().optional(),
+  "filesUpdated": zod.number(),
+  "message": zod.string()
 })
 
 

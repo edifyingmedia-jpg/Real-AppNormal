@@ -6,20 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Project {
-  id: number;
-  name: string;
-  /** @nullable */
-  description?: string | null;
-  /** @nullable */
-  conversationId?: number | null;
-  isPublished: boolean;
+export interface ProjectSettingsInput {
   /** @nullable */
   githubRepo?: string | null;
   /** @nullable */
+  githubToken?: string | null;
+  /** @nullable */
   supabaseUrl?: string | null;
   /** @nullable */
+  supabaseAnonKey?: string | null;
+  /** @nullable */
   stripePublishableKey?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
 }

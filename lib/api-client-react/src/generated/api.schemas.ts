@@ -20,6 +20,13 @@ export interface Project {
   description?: string | null;
   /** @nullable */
   conversationId?: number | null;
+  isPublished: boolean;
+  /** @nullable */
+  githubRepo?: string | null;
+  /** @nullable */
+  supabaseUrl?: string | null;
+  /** @nullable */
+  stripePublishableKey?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,6 +41,30 @@ export interface ProjectUpdate {
   description?: string;
   /** @nullable */
   conversationId?: number | null;
+}
+
+export interface PublishProjectInput {
+  isPublished: boolean;
+}
+
+export interface ProjectSettingsInput {
+  /** @nullable */
+  githubRepo?: string | null;
+  /** @nullable */
+  githubToken?: string | null;
+  /** @nullable */
+  supabaseUrl?: string | null;
+  /** @nullable */
+  supabaseAnonKey?: string | null;
+  /** @nullable */
+  stripePublishableKey?: string | null;
+}
+
+export interface GithubPushResult {
+  success: boolean;
+  repoUrl?: string;
+  filesUpdated: number;
+  message: string;
 }
 
 export interface ProjectFile {
@@ -65,6 +96,13 @@ export interface ProjectWithFiles {
   description?: string | null;
   /** @nullable */
   conversationId?: number | null;
+  isPublished: boolean;
+  /** @nullable */
+  githubRepo?: string | null;
+  /** @nullable */
+  supabaseUrl?: string | null;
+  /** @nullable */
+  stripePublishableKey?: string | null;
   createdAt: string;
   updatedAt: string;
   files: ProjectFile[];

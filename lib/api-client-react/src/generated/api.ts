@@ -27,14 +27,17 @@ import type {
   AnthropicMessage,
   AnthropicMessageInput,
   ApiError,
+  GithubPushResult,
   HealthStatus,
   Project,
   ProjectFile,
   ProjectFileInput,
   ProjectFileUpdate,
   ProjectInput,
+  ProjectSettingsInput,
   ProjectUpdate,
-  ProjectWithFiles
+  ProjectWithFiles,
+  PublishProjectInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -787,6 +790,220 @@ export const useDeleteProjectFile = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteProjectFileMutationOptions(options));
+    }
+
+export const getPublishProjectUrl = (id: number,) => {
+
+
+
+
+  return `/api/projects/${id}/publish`
+}
+
+/**
+ * @summary Publish or unpublish a project
+ */
+export const publishProject = async (id: number,
+    publishProjectInput: PublishProjectInput, options?: RequestInit): Promise<Project> => {
+
+  return customFetch<Project>(getPublishProjectUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      publishProjectInput,)
+  }
+);}
+
+
+
+
+export const getPublishProjectMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishProject>>, TError,{id: number;data: BodyType<PublishProjectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof publishProject>>, TError,{id: number;data: BodyType<PublishProjectInput>}, TContext> => {
+
+const mutationKey = ['publishProject'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publishProject>>, {id: number;data: BodyType<PublishProjectInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  publishProject(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublishProjectMutationResult = NonNullable<Awaited<ReturnType<typeof publishProject>>>
+    export type PublishProjectMutationBody = BodyType<PublishProjectInput>
+    export type PublishProjectMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Publish or unpublish a project
+ */
+export const usePublishProject = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishProject>>, TError,{id: number;data: BodyType<PublishProjectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof publishProject>>,
+        TError,
+        {id: number;data: BodyType<PublishProjectInput>},
+        TContext
+      > => {
+      return useMutation(getPublishProjectMutationOptions(options));
+    }
+
+export const getUpdateProjectSettingsUrl = (id: number,) => {
+
+
+
+
+  return `/api/projects/${id}/settings`
+}
+
+/**
+ * @summary Update project integration settings
+ */
+export const updateProjectSettings = async (id: number,
+    projectSettingsInput: ProjectSettingsInput, options?: RequestInit): Promise<Project> => {
+
+  return customFetch<Project>(getUpdateProjectSettingsUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      projectSettingsInput,)
+  }
+);}
+
+
+
+
+export const getUpdateProjectSettingsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProjectSettings>>, TError,{id: number;data: BodyType<ProjectSettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProjectSettings>>, TError,{id: number;data: BodyType<ProjectSettingsInput>}, TContext> => {
+
+const mutationKey = ['updateProjectSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProjectSettings>>, {id: number;data: BodyType<ProjectSettingsInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateProjectSettings(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProjectSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateProjectSettings>>>
+    export type UpdateProjectSettingsMutationBody = BodyType<ProjectSettingsInput>
+    export type UpdateProjectSettingsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update project integration settings
+ */
+export const useUpdateProjectSettings = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProjectSettings>>, TError,{id: number;data: BodyType<ProjectSettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProjectSettings>>,
+        TError,
+        {id: number;data: BodyType<ProjectSettingsInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateProjectSettingsMutationOptions(options));
+    }
+
+export const getPushProjectToGithubUrl = (id: number,) => {
+
+
+
+
+  return `/api/projects/${id}/github/push`
+}
+
+/**
+ * @summary Push project files to a GitHub repository
+ */
+export const pushProjectToGithub = async (id: number, options?: RequestInit): Promise<GithubPushResult> => {
+
+  return customFetch<GithubPushResult>(getPushProjectToGithubUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPushProjectToGithubMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pushProjectToGithub>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pushProjectToGithub>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['pushProjectToGithub'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pushProjectToGithub>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  pushProjectToGithub(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PushProjectToGithubMutationResult = NonNullable<Awaited<ReturnType<typeof pushProjectToGithub>>>
+
+    export type PushProjectToGithubMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Push project files to a GitHub repository
+ */
+export const usePushProjectToGithub = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pushProjectToGithub>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof pushProjectToGithub>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getPushProjectToGithubMutationOptions(options));
     }
 
 export const getListAnthropicConversationsUrl = () => {

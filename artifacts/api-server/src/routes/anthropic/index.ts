@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, conversations as conversationsTable, messages as messagesTable } from "@workspace/db";
+import { db, conversations as conversationsTable, messages as messagesTable, projectsTable } from "@workspace/db";
 import {
   CreateAnthropicConversationBody,
   GetAnthropicConversationParams,
@@ -112,6 +112,12 @@ router.post("/anthropic/conversations/:id/messages", async (req, res): Promise<v
     return;
   }
 
+  // Look up the project linked to this conversation to get integration settings
+  const [project] = await db
+    .select()
+    .from(projectsTable)
+    .where(eq(projectsTable.conversationId, conversationId));
+
   await db.insert(messagesTable).values({
     conversationId,
     role: "user",
@@ -128,6 +134,56 @@ router.post("/anthropic/conversations/:id/messages", async (req, res): Promise<v
     role: m.role as "user" | "assistant",
     content: m.content,
   }));
+
+  // Build integration context sections
+  let integrationContext = "";
+
+  if (project?.supabaseUrl && project?.supabaseAnonKey) {
+    integrationContext += `
+
+=== SUPABASE INTEGRATION (ACTIVE) ===
+This project is connected to Supabase. Use these credentials in generated code:
+- Supabase URL: ${project.supabaseUrl}
+- Supabase Anon Key: ${project.supabaseAnonKey}
+
+Include Supabase via CDN in index.html:
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+Initialize in your script:
+const { createClient } = supabase
+const supabaseClient = createClient('${project.supabaseUrl}', '${project.supabaseAnonKey}')
+
+Available Supabase features to use:
+- Auth: supabaseClient.auth.signUp(), .signInWithPassword(), .signOut(), .getUser()
+- Database: supabaseClient.from('table').select(), .insert(), .update(), .delete(), .upsert()
+- Realtime: supabaseClient.channel('name').on('postgres_changes', ...).subscribe()
+- Storage: supabaseClient.storage.from('bucket').upload(), .download(), .getPublicUrl()
+
+Build real full-stack features: user authentication, persistent data storage, realtime updates.
+Always handle auth state and show appropriate UI for logged-in vs logged-out users.`;
+  }
+
+  if (project?.stripePublishableKey) {
+    integrationContext += `
+
+=== STRIPE INTEGRATION (ACTIVE) ===
+This project uses Stripe for payments. Use this publishable key: ${project.stripePublishableKey}
+
+Include Stripe.js via CDN in index.html:
+<script src="https://js.stripe.com/v3/"></script>
+
+Initialize in your script:
+const stripe = Stripe('${project.stripePublishableKey}')
+
+For payment UI, use Stripe Elements:
+const elements = stripe.elements()
+const cardElement = elements.create('card')
+cardElement.mount('#card-element')
+
+Note: Stripe requires a backend for payment intents. When Supabase is also configured,
+you can use Supabase Edge Functions as the backend for Stripe webhooks and payment intents.
+For frontend-only demos, you can show the payment UI without completing real charges.`;
+  }
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -179,24 +235,8 @@ Include via CDN when appropriate:
 <script src="https://cdn.tailwindcss.com"></script>
 
 **Chart.js, D3, Three.js, etc.:**
-Include from CDN when the user's request needs data visualization or 3D.
-
-=== CAPABILITY RULES ===
-
-For "full-stack" feel without a server:
-- Use localStorage / sessionStorage for persistence
-- Use the Fetch API to call public APIs (OpenWeather, JSONPlaceholder, REST Countries, etc.)
-- Use IndexedDB for larger data storage
-- Simulate backend with in-memory JavaScript objects + localStorage
-
-For forms and CRUD apps:
-- Store data in localStorage, render from it on load
-- Full Create/Read/Update/Delete functionality
-
-For dashboards:
-- Use Chart.js from CDN for charts
-- Generate realistic-looking mock data
-- Animate numbers and charts on load
+Include via CDN: <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+${integrationContext}
 
 === QUALITY RULES ===
 

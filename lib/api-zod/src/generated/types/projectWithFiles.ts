@@ -14,6 +14,13 @@ export interface ProjectWithFiles {
   description?: string | null;
   /** @nullable */
   conversationId?: number | null;
+  isPublished: boolean;
+  /** @nullable */
+  githubRepo?: string | null;
+  /** @nullable */
+  supabaseUrl?: string | null;
+  /** @nullable */
+  stripePublishableKey?: string | null;
   createdAt: Date;
   updatedAt: Date;
   files: ProjectFile[];
