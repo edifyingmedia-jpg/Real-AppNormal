@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "functions": {
+    "artifacts/api-server/dist/index.mjs": {
+      "runtime": "nodejs22.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "artifacts/api-server/dist/index.mjs"
+    }
+  ]
+}
