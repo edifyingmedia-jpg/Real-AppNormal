@@ -504,6 +504,8 @@ components:
           type: boolean
         githubRepo:
           type: ["string", "null"]
+        autoPushToGithub:
+          type: boolean
         supabaseUrl:
           type: ["string", "null"]
         stripePublishableKey:
@@ -562,6 +564,8 @@ components:
           type: ["string", "null"]
         githubToken:
           type: ["string", "null"]
+        autoPushToGithub:
+          type: boolean
         supabaseUrl:
           type: ["string", "null"]
         supabaseAnonKey:
@@ -661,6 +665,8 @@ components:
           type: boolean
         githubRepo:
           type: ["string", "null"]
+        autoPushToGithub:
+          type: boolean
         supabaseUrl:
           type: ["string", "null"]
         stripePublishableKey:

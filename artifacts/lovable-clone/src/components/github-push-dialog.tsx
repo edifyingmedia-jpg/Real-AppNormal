@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { Github, ExternalLink, Loader2, CheckCircle2, AlertCircle, Crown, Zap } from "lucide-react";
 
 interface GitHubPushDialogProps {
@@ -18,6 +19,7 @@ interface GitHubPushDialogProps {
   onOpenChange: (open: boolean) => void;
   projectId: number;
   githubRepo: string | null | undefined;
+  autoPushToGithub: boolean | null | undefined;
   hasFiles: boolean;
 }
 
@@ -26,11 +28,13 @@ export function GitHubPushDialog({
   onOpenChange,
   projectId,
   githubRepo,
+  autoPushToGithub,
   hasFiles,
 }: GitHubPushDialogProps) {
   const [token, setToken] = useState("");
   const [repo, setRepo] = useState(githubRepo ?? "");
   const [upgradeRequired, setUpgradeRequired] = useState(false);
+  const [autoSync, setAutoSync] = useState(autoPushToGithub ?? false);
   const [result, setResult] = useState<{ success: boolean; message: string; repoUrl?: string } | null>(null);
   const queryClient = useQueryClient();
 
@@ -41,10 +45,10 @@ export function GitHubPushDialog({
     setResult(null);
     setUpgradeRequired(false);
     try {
-      if (token || repo !== (githubRepo ?? "")) {
+      if (token || repo !== (githubRepo ?? "") || autoSync !== (autoPushToGithub ?? false)) {
         await updateSettings.mutateAsync({
           id: projectId,
-          data: { githubRepo: repo || null, githubToken: token || null },
+          data: { githubRepo: repo || null, githubToken: token || null, autoPushToGithub: autoSync },
         });
         queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
       }
@@ -60,6 +64,19 @@ export function GitHubPushDialog({
       const apiMsg = apiErr?.response?.data?.message ?? apiErr?.response?.data?.error;
       const msg = err instanceof Error ? err.message : "Push failed";
       setResult({ success: false, message: apiMsg ?? msg });
+    }
+  };
+
+  const handleToggleAutoSync = async (checked: boolean) => {
+    setAutoSync(checked);
+    try {
+      await updateSettings.mutateAsync({
+        id: projectId,
+        data: { autoPushToGithub: checked },
+      });
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    } catch {
+      setAutoSync(!checked);
     }
   };
 
@@ -148,6 +165,26 @@ export function GitHubPushDialog({
                 </div>
               </div>
 
+              {githubRepo && (
+                <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3.5 py-3">
+                  <div className="flex items-start gap-2.5">
+                    <Zap className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-foreground">Auto-sync after AI generation</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Automatically push to GitHub whenever the AI builds or updates your app.
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={autoSync}
+                    onCheckedChange={handleToggleAutoSync}
+                    disabled={updateSettings.isPending}
+                    className="shrink-0 ml-3"
+                  />
+                </div>
+              )}
+
               {result && (
                 <div className={`flex items-start gap-2.5 rounded-lg px-3.5 py-3 text-sm ${
                   result.success
@@ -182,12 +219,6 @@ export function GitHubPushDialog({
                 </Button>
               </div>
             </>
-          )}
-
-          {upgradeRequired && (
-            <div className="flex justify-end">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-            </div>
           )}
         </div>
       </DialogContent>

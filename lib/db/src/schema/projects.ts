@@ -13,6 +13,7 @@ export const projectsTable = pgTable("projects", {
   isPublished: boolean("is_published").notNull().default(false),
   githubRepo: text("github_repo"),
   githubToken: text("github_token"),
+  autoPushToGithub: boolean("auto_push_to_github").notNull().default(false),
   supabaseUrl: text("supabase_url"),
   supabaseAnonKey: text("supabase_anon_key"),
   stripePublishableKey: text("stripe_publishable_key"),

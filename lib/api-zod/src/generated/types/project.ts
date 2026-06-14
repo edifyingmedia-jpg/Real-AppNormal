@@ -17,6 +17,7 @@ export interface Project {
   isPublished: boolean;
   /** @nullable */
   githubRepo?: string | null;
+  autoPushToGithub?: boolean;
   /** @nullable */
   supabaseUrl?: string | null;
   /** @nullable */

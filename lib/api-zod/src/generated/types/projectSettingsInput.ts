@@ -12,6 +12,7 @@ export interface ProjectSettingsInput {
   githubRepo?: string | null;
   /** @nullable */
   githubToken?: string | null;
+  autoPushToGithub?: boolean;
   /** @nullable */
   supabaseUrl?: string | null;
   /** @nullable */

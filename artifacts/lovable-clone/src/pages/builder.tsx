@@ -182,6 +182,8 @@ export default function Builder() {
               conversationId={project.conversationId}
               previewErrors={previewErrors}
               onErrorsFixed={() => setPreviewErrors([])}
+              autoPushToGithub={project.autoPushToGithub}
+              githubRepo={project.githubRepo}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center text-muted-foreground p-6 text-center text-sm">
@@ -224,6 +226,7 @@ export default function Builder() {
         onOpenChange={setGithubOpen}
         projectId={projectId}
         githubRepo={project.githubRepo}
+        autoPushToGithub={project.autoPushToGithub}
         hasFiles={hasFiles}
       />
       <ProjectSettingsDialog

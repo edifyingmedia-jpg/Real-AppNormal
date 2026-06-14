@@ -3,6 +3,7 @@ import {
   useGetAnthropicConversation,
   useCreateProjectFile,
   useUpdateProjectFile,
+  usePushProjectToGithub,
   getGetAnthropicConversationQueryKey,
   getGetProjectQueryKey,
   getListProjectFilesQueryKey,
@@ -22,6 +23,7 @@ import {
   Link2,
   X,
   Wrench,
+  Github,
 } from "lucide-react";
 import type { PreviewError } from "@/components/preview-panel";
 
@@ -48,6 +50,8 @@ interface ChatPanelProps {
   conversationId: number;
   previewErrors?: PreviewError[];
   onErrorsFixed?: () => void;
+  autoPushToGithub?: boolean | null;
+  githubRepo?: string | null;
 }
 
 function extractJSON(text: string): ParsedAIResponse | null {
@@ -217,6 +221,8 @@ export function ChatPanel({
   conversationId,
   previewErrors = [],
   onErrorsFixed,
+  autoPushToGithub,
+  githubRepo,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -231,6 +237,7 @@ export function ChatPanel({
   const [cloneUrl, setCloneUrl] = useState("");
   const [isScraping, setIsScraping] = useState(false);
   const [scrapeError, setScrapeError] = useState<string | null>(null);
+  const [isAutoPushing, setIsAutoPushing] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
@@ -241,6 +248,7 @@ export function ChatPanel({
 
   const createFile = useCreateProjectFile();
   const updateFile = useUpdateProjectFile();
+  const pushToGithub = usePushProjectToGithub();
 
   const messages = conversation?.messages ?? [];
 
@@ -416,6 +424,17 @@ export function ChatPanel({
           // Clear errors after successful fix
           onErrorsFixed?.();
           setDismissedErrors(true);
+          // Auto-push to GitHub if enabled and configured
+          if (autoPushToGithub && githubRepo) {
+            setIsAutoPushing(true);
+            try {
+              await pushToGithub.mutateAsync({ id: projectId });
+            } catch {
+              // Silent failure — user can push manually
+            } finally {
+              setIsAutoPushing(false);
+            }
+          }
         } else if (fullText.trim()) {
           setStreamError("Couldn't parse the AI response into files. Try rephrasing your request.");
         }
@@ -604,6 +623,12 @@ export function ChatPanel({
                   <div className="mt-1.5 flex items-center gap-1.5 text-xs text-primary">
                     <Loader2 className="w-3 h-3 animate-spin" />
                     Saving files…
+                  </div>
+                )}
+                {isAutoPushing && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Github className="w-3 h-3 animate-pulse" />
+                    Pushing to GitHub…
                   </div>
                 )}
               </div>
