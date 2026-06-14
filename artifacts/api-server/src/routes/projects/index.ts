@@ -23,9 +23,16 @@ import {
 
 const router: IRouter = Router();
 
+type ProjectRow = typeof projectsTable.$inferSelect;
+
+function redactProject<T extends Partial<ProjectRow>>(project: T): Omit<T, "openaiApiKey" | "geminiApiKey" | "githubToken" | "supabaseAnonKey"> {
+  const { openaiApiKey: _oa, geminiApiKey: _ga, githubToken: _gt, supabaseAnonKey: _sa, ...safe } = project as ProjectRow & Record<string, unknown>;
+  return safe as Omit<T, "openaiApiKey" | "geminiApiKey" | "githubToken" | "supabaseAnonKey">;
+}
+
 router.get("/projects", async (_req, res): Promise<void> => {
   const projects = await db.select().from(projectsTable).orderBy(projectsTable.updatedAt);
-  res.json(projects);
+  res.json(projects.map(redactProject));
 });
 
 router.post("/projects", async (req, res): Promise<void> => {
@@ -35,7 +42,7 @@ router.post("/projects", async (req, res): Promise<void> => {
     return;
   }
   const [project] = await db.insert(projectsTable).values(parsed.data).returning();
-  res.status(201).json(project);
+  res.status(201).json(redactProject(project));
 });
 
 router.get("/projects/:id", async (req, res): Promise<void> => {
@@ -50,7 +57,7 @@ router.get("/projects/:id", async (req, res): Promise<void> => {
     return;
   }
   const files = await db.select().from(projectFilesTable).where(eq(projectFilesTable.projectId, params.data.id));
-  res.json({ ...project, files });
+  res.json({ ...redactProject(project), files });
 });
 
 router.patch("/projects/:id", async (req, res): Promise<void> => {
@@ -73,7 +80,7 @@ router.patch("/projects/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Project not found" });
     return;
   }
-  res.json(project);
+  res.json(redactProject(project));
 });
 
 router.delete("/projects/:id", async (req, res): Promise<void> => {
@@ -198,7 +205,7 @@ router.patch("/projects/:id/settings", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Project not found" });
     return;
   }
-  res.json(project);
+  res.json(redactProject(project));
 });
 
 router.post("/projects/:id/github/push", requiresPaidTier, async (req, res): Promise<void> => {
