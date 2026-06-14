@@ -1,6 +1,6 @@
-# [Project name]
+# AppNormal
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Build full-stack apps with AI — describe what you want, watch it come to life in seconds.
 
 ## Run & Operate
 

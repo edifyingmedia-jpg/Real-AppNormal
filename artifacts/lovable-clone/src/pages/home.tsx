@@ -55,7 +55,7 @@ export default function Home() {
         {/* Logo */}
         <div className="absolute top-6 left-6 lg:left-12 flex items-center gap-2 text-slate-400">
           <TerminalSquare className="w-5 h-5" />
-          <span className="text-sm font-medium tracking-tight">AI App Builder</span>
+          <span className="text-sm font-medium tracking-tight">AppNormal</span>
         </div>
 
         {/* Hero Content */}
