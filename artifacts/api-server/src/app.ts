@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
@@ -15,30 +15,30 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+// Fix TS2349: Use 'default' if available to get the callable function
+const pinoMiddleware = (pinoHttp as any).default || pinoHttp;
+
 app.use(
-  pinoHttp({
+  pinoMiddleware({
     logger,
     serializers: {
-      req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
-      },
-      res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
-      },
+      req: (req: any) => ({
+        id: req.id,
+        method: req.method,
+        url: req.url?.split("?")[0],
+      }),
+      res: (res: any) => ({
+        statusCode: res.statusCode,
+      }),
     },
   }),
 );
 
+// Fix TS7006: Added Request and Response types
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     const signature = req.headers["stripe-signature"];
     if (!signature) {
       res.status(400).json({ error: "Missing stripe-signature" });
@@ -63,7 +63,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(
-  clerkMiddleware((req) => ({
+  clerkMiddleware((req: Request) => ({
     publishableKey: publishableKeyFromHost(
       getClerkProxyHost(req) ?? "",
       process.env.CLERK_PUBLISHABLE_KEY,
