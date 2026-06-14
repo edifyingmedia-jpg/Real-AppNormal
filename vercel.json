@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "artifacts/api-server/dist/index.mjs",
+      "src": "artifacts/api-server/build.mjs",
       "use": "@vercel/node"
     }
   ],
