@@ -42,12 +42,9 @@ export async function handleStripeBusinessEvent(payload: Buffer, signature: stri
         break;
       }
 
-      const customerId =
-        typeof session.customer === "string" ? session.customer : (session.customer as any)?.id;
-      const subscriptionId =
-        typeof session.subscription === "string"
-          ? session.subscription
-          : (session.subscription as any)?.id;
+      // Use Stripe types directly
+      const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
+      const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
 
       const updateFields: Record<string, any> = {
         creditsRemaining: sql`${usersTable.creditsRemaining} + ${credits}`,
@@ -64,10 +61,7 @@ export async function handleStripeBusinessEvent(payload: Buffer, signature: stri
 
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
-      const customerId =
-        typeof subscription.customer === "string"
-          ? subscription.customer
-          : (subscription.customer as any).id;
+      const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
 
       await db
         .update(usersTable)
@@ -80,12 +74,9 @@ export async function handleStripeBusinessEvent(payload: Buffer, signature: stri
 
     case "customer.subscription.updated": {
       const subscription = event.data.object as Stripe.Subscription;
-      const customerId =
-        typeof subscription.customer === "string"
-          ? subscription.customer
-          : (subscription.customer as any).id;
+      const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
 
-      const metadata = subscription.metadata as Record<string, string> | undefined;
+      const metadata = subscription.metadata;
       const newTier = metadata?.tier;
 
       if (newTier && (newTier === "creator" || newTier === "studio")) {
