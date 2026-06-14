@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppNormal – Build Better Apps</title>
+  <link rel="stylesheet" href="/styles/landing.css" />
+</head>
+
+<body>
+
+  <!-- TOP NAV -->
+  <header class="nav">
+    <img src="/assets/appnormal-logo.svg" class="logo" />
+    <nav>
+      <a href="#pricing">Pricing</a>
+      <a href="/workspace.html">Workspace</a>
+      <a href="/login.html" class="btn">Sign In</a>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1>Build apps the normal way — the AppNormal way.</h1>
+    <p>Describe your idea. Watch it come alive instantly.</p>
+
+    <div class="hero-actions">
+      <input id="landingPrompt" placeholder="Describe your app…" />
+      <button onclick="startBuilding()">Start Building</button>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" class="pricing">
+    <h2>Membership Plans</h2>
+
+    <div class="plans">
+
+      <!-- CREATOR MONTHLY -->
+      <div class="plan">
+        <h3>Creator</h3>
+        <p class="price">$12.99 / month</p>
+        <button onclick="checkout('price_1TcWrm3KBCLmbd6Asc5rZJ4E')">
+          Choose Creator Monthly
+        </button>
+      </div>
+
+      <!-- CREATOR YEARLY -->
+      <div class="plan">
+        <h3>Creator Yearly</h3>
+        <p class="price">$129 / year</p>
+        <button onclick="checkout('price_1TcWtR3KBCLmbd6AakZHA1be')">
+          Choose Creator Yearly
+        </button>
+      </div>
+
+      <!-- STUDIO MONTHLY -->
+      <div class="plan">
+        <h3>Studio</h3>
+        <p class="price">$29.99 / month</p>
+        <button onclick="checkout('price_1TcWw33KBCLmbd6ArosotaPG')">
+          Choose Studio Monthly
+        </button>
+      </div>
+
+      <!-- STUDIO YEARLY -->
+      <div class="plan">
+        <h3>Studio Yearly</h3>
+        <p class="price">$299 / year</p>
+        <button onclick="checkout('price_1TcWxL3KBCLmbd6AJ2MI5uU0')">
+          Choose Studio Yearly
+        </button>
+      </div>
+
+    </div>
+
+    <h2>Credit Bundles</h2>
+
+    <div class="bundles">
+
+      <div class="bundle">
+        <h3>100 Credits</h3>
+        <p class="price">$7.99</p>
+        <button onclick="checkout('price_1TcWyu3KBCLmbd6AI7NUrV0o')">
+          Buy 100 Credits
+        </button>
+      </div>
+
+      <div class="bundle">
+        <h3>200 Credits</h3>
+        <p class="price">$14.99</p>
+        <button onclick="checkout('price_1TcX023KBCLmbd6Aw4QlY7cw')">
+          Buy 200 Credits
+        </button>
+      </div>
+
+      <div class="bundle">
+        <h3>300 Credits</h3>
+        <p class="price">$21.99</p>
+        <button onclick="checkout('price_1TcX1N3KBCLmbd6AQLQLWct7')">
+          Buy 300 Credits
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <script>
+    function startBuilding() {
+      const prompt = document.getElementById("landingPrompt").value;
+      window.location.href = "/workspace.html?prompt=" + encodeURIComponent(prompt);
+    }
+
+    async function checkout(priceId) {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          priceId,
+          successUrl: window.location.origin + "/success.html",
+          cancelUrl: window.location.origin + "/cancel.html"
+        })
+      });
+
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    }
+  </script>
+
+</body>
+</html>
