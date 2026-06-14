@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppNormal Workspace</title>
+  <link rel="stylesheet" href="/styles/workspace.css" />
+</head>
+
+<body>
+
+  <div class="workspace">
+
+    <!-- LEFT: AI PANEL -->
+    <div class="ai-panel">
+      <h2>AppNormal AI</h2>
+
+      <div id="messages" class="messages"></div>
+
+      <div class="input-row">
+        <input id="userInput" placeholder="Tell AppNormal what to build…" />
+        <button onclick="send()">Send</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: PREVIEW -->
+    <div class="preview">
+      <iframe id="previewFrame" src="/preview/index.html"></iframe>
+    </div>
+
+  </div>
+
+  <script>
+    const messages = document.getElementById("messages");
+    const preview = document.getElementById("previewFrame");
+
+    function addMessage(role, text) {
+      const div = document.createElement("div");
+      div.className = role;
+      div.textContent = text;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function send() {
+      const input = document.getElementById("userInput");
+      const text = input.value;
+      input.value = "";
+
+      addMessage("user", text);
+
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: text })
+      });
+
+      const data = await res.json();
+      addMessage("ai", data.reply);
+
+      if (data.previewHtml) {
+        const doc = preview.contentDocument;
+        doc.open();
+        doc.write(data.previewHtml);
+        doc.close();
+      }
+    }
+  </script>
+
+</body>
+</html>
