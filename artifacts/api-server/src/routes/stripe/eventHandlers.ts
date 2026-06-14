@@ -1,4 +1,6 @@
 import Stripe from "stripe";
+// Explicitly import the type definitions to avoid namespace resolution issues
+import type { Event, Checkout, Subscription } from "stripe";
 import { db, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { getStripeCredentialsPublic } from "./stripeClient";
@@ -20,7 +22,8 @@ export async function handleStripeBusinessEvent(payload: Buffer, signature: stri
 
   const stripe = new Stripe(creds.secretKey);
 
-  let event: Stripe.Event;
+  // Using the explicitly imported 'Event' type
+  let event: Event;
   try {
     event = stripe.webhooks.constructEvent(payload, signature, creds.webhookSecret);
   } catch (err: any) {
@@ -28,11 +31,10 @@ export async function handleStripeBusinessEvent(payload: Buffer, signature: stri
     throw new Error(`Webhook signature verification failed: ${err.message}`);
   }
 
-  logger.info({ type: event.type }, "Processing Stripe business event");
-
   switch (event.type) {
     case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
+      // Using the explicitly imported 'Checkout' type
+      const session = event.data.object as Checkout.Session;
       const userId = session.client_reference_id ?? session.metadata?.userId;
       const tier = session.metadata?.tier;
       const credits = parseInt(session.metadata?.credits ?? "0", 10);
@@ -42,7 +44,6 @@ export async function handleStripeBusinessEvent(payload: Buffer, signature: stri
         break;
       }
 
-      // Use Stripe types directly
       const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
       const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
 
@@ -54,26 +55,23 @@ export async function handleStripeBusinessEvent(payload: Buffer, signature: stri
       if (subscriptionId) updateFields.stripeSubscriptionId = subscriptionId;
 
       await db.update(usersTable).set(updateFields).where(eq(usersTable.id, userId));
-
-      logger.info({ userId, tier, credits }, "Granted credits after checkout");
       break;
     }
 
     case "customer.subscription.deleted": {
-      const subscription = event.data.object as Stripe.Subscription;
+      // Using the explicitly imported 'Subscription' type
+      const subscription = event.data.object as Subscription;
       const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
 
       await db
         .update(usersTable)
         .set({ tier: "free", stripeSubscriptionId: null })
         .where(eq(usersTable.stripeCustomerId, customerId));
-
-      logger.info({ customerId }, "Downgraded user to free after subscription deleted");
       break;
     }
 
     case "customer.subscription.updated": {
-      const subscription = event.data.object as Stripe.Subscription;
+      const subscription = event.data.object as Subscription;
       const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
 
       const metadata = subscription.metadata;
@@ -84,12 +82,8 @@ export async function handleStripeBusinessEvent(payload: Buffer, signature: stri
           .update(usersTable)
           .set({ tier: newTier })
           .where(eq(usersTable.stripeCustomerId, customerId));
-        logger.info({ customerId, newTier }, "Updated user tier from subscription update");
       }
       break;
     }
-
-    default:
-      break;
   }
 }
