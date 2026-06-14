@@ -480,6 +480,8 @@ components:
           type: ["string", "null"]
         stripePublishableKey:
           type: ["string", "null"]
+        customDomain:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -533,6 +535,8 @@ components:
         supabaseAnonKey:
           type: ["string", "null"]
         stripePublishableKey:
+          type: ["string", "null"]
+        customDomain:
           type: ["string", "null"]
 
     GithubPushResult:
@@ -622,6 +626,8 @@ components:
           type: ["string", "null"]
         stripePublishableKey:
           type: ["string", "null"]
+        customDomain:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -647,12 +653,18 @@ components:
           type: integer
         title:
           type: string
+        tokensUsed:
+          type: integer
+        creditLimit:
+          type: integer
         createdAt:
           type: string
           format: date-time
       required:
         - id
         - title
+        - tokensUsed
+        - creditLimit
         - createdAt
 
     AnthropicMessage:
@@ -699,6 +711,10 @@ components:
           type: integer
         title:
           type: string
+        tokensUsed:
+          type: integer
+        creditLimit:
+          type: integer
         createdAt:
           type: string
           format: date-time
@@ -709,6 +725,8 @@ components:
       required:
         - id
         - title
+        - tokensUsed
+        - creditLimit
         - createdAt
         - messages
 

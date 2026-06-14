@@ -29,6 +29,7 @@ export const ListProjectsResponseItem = zod.object({
   "githubRepo": zod.string().nullish(),
   "supabaseUrl": zod.string().nullish(),
   "stripePublishableKey": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -60,6 +61,7 @@ export const GetProjectResponse = zod.object({
   "githubRepo": zod.string().nullish(),
   "supabaseUrl": zod.string().nullish(),
   "stripePublishableKey": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date(),
   "files": zod.array(zod.object({
@@ -96,6 +98,7 @@ export const UpdateProjectResponse = zod.object({
   "githubRepo": zod.string().nullish(),
   "supabaseUrl": zod.string().nullish(),
   "stripePublishableKey": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -196,6 +199,7 @@ export const PublishProjectResponse = zod.object({
   "githubRepo": zod.string().nullish(),
   "supabaseUrl": zod.string().nullish(),
   "stripePublishableKey": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -213,7 +217,8 @@ export const UpdateProjectSettingsBody = zod.object({
   "githubToken": zod.string().nullish(),
   "supabaseUrl": zod.string().nullish(),
   "supabaseAnonKey": zod.string().nullish(),
-  "stripePublishableKey": zod.string().nullish()
+  "stripePublishableKey": zod.string().nullish(),
+  "customDomain": zod.string().nullish()
 })
 
 export const UpdateProjectSettingsResponse = zod.object({
@@ -225,6 +230,7 @@ export const UpdateProjectSettingsResponse = zod.object({
   "githubRepo": zod.string().nullish(),
   "supabaseUrl": zod.string().nullish(),
   "stripePublishableKey": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -251,6 +257,8 @@ export const PushProjectToGithubResponse = zod.object({
 export const ListAnthropicConversationsResponseItem = zod.object({
   "id": zod.number(),
   "title": zod.string(),
+  "tokensUsed": zod.number(),
+  "creditLimit": zod.number(),
   "createdAt": zod.coerce.date()
 })
 export const ListAnthropicConversationsResponse = zod.array(ListAnthropicConversationsResponseItem)
@@ -274,6 +282,8 @@ export const GetAnthropicConversationParams = zod.object({
 export const GetAnthropicConversationResponse = zod.object({
   "id": zod.number(),
   "title": zod.string(),
+  "tokensUsed": zod.number(),
+  "creditLimit": zod.number(),
   "createdAt": zod.coerce.date(),
   "messages": zod.array(zod.object({
   "id": zod.number(),

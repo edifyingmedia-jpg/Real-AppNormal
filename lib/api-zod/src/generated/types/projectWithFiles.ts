@@ -21,6 +21,8 @@ export interface ProjectWithFiles {
   supabaseUrl?: string | null;
   /** @nullable */
   stripePublishableKey?: string | null;
+  /** @nullable */
+  customDomain?: string | null;
   createdAt: Date;
   updatedAt: Date;
   files: ProjectFile[];

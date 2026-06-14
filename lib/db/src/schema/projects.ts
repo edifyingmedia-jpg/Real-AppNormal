@@ -13,6 +13,7 @@ export const projectsTable = pgTable("projects", {
   supabaseUrl: text("supabase_url"),
   supabaseAnonKey: text("supabase_anon_key"),
   stripePublishableKey: text("stripe_publishable_key"),
+  customDomain: text("custom_domain"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

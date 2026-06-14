@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Database, CreditCard, Loader2, CheckCircle2, ExternalLink } from "lucide-react";
+import { Database, CreditCard, Globe, Loader2, CheckCircle2, ExternalLink, Copy, Check } from "lucide-react";
 
 interface ProjectSettingsDialogProps {
   open: boolean;
@@ -19,6 +19,7 @@ interface ProjectSettingsDialogProps {
   projectId: number;
   supabaseUrl: string | null | undefined;
   stripePublishableKey: string | null | undefined;
+  customDomain: string | null | undefined;
 }
 
 export function ProjectSettingsDialog({
@@ -27,11 +28,14 @@ export function ProjectSettingsDialog({
   projectId,
   supabaseUrl,
   stripePublishableKey,
+  customDomain,
 }: ProjectSettingsDialogProps) {
   const [sbUrl, setSbUrl] = useState(supabaseUrl ?? "");
   const [sbAnonKey, setSbAnonKey] = useState("");
   const [stripeKey, setStripeKey] = useState(stripePublishableKey ?? "");
+  const [domain, setDomain] = useState(customDomain ?? "");
   const [saved, setSaved] = useState(false);
+  const [copiedCname, setCopiedCname] = useState(false);
   const queryClient = useQueryClient();
   const updateSettings = useUpdateProjectSettings();
 
@@ -40,9 +44,10 @@ export function ProjectSettingsDialog({
       setSbUrl(supabaseUrl ?? "");
       setSbAnonKey("");
       setStripeKey(stripePublishableKey ?? "");
+      setDomain(customDomain ?? "");
       setSaved(false);
     }
-  }, [open, supabaseUrl, stripePublishableKey]);
+  }, [open, supabaseUrl, stripePublishableKey, customDomain]);
 
   const handleSave = async () => {
     setSaved(false);
@@ -52,6 +57,7 @@ export function ProjectSettingsDialog({
         supabaseUrl: sbUrl || null,
         supabaseAnonKey: sbAnonKey || null,
         stripePublishableKey: stripeKey || null,
+        customDomain: domain || null,
       },
     });
     queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
@@ -59,16 +65,23 @@ export function ProjectSettingsDialog({
     setTimeout(() => setSaved(false), 2500);
   };
 
+  const copyCname = async () => {
+    await navigator.clipboard.writeText("proxy.appnormal.com");
+    setCopiedCname(true);
+    setTimeout(() => setCopiedCname(false), 2000);
+  };
+
   const supabaseConfigured = !!supabaseUrl;
   const stripeConfigured = !!stripePublishableKey;
+  const domainConfigured = !!customDomain;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Integrations</DialogTitle>
+          <DialogTitle>Integrations & Settings</DialogTitle>
           <DialogDescription>
-            Connect services to unlock full-stack AI generation. Once connected, the AI automatically uses these in generated code.
+            Connect services to unlock full-stack AI generation. Once connected, the AI automatically uses them.
           </DialogDescription>
         </DialogHeader>
 
@@ -88,38 +101,24 @@ export function ProjectSettingsDialog({
                 </div>
                 <p className="text-xs text-muted-foreground">Auth, database, realtime &amp; storage</p>
               </div>
-              <a
-                href="https://supabase.com/dashboard"
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-primary hover:underline inline-flex items-center gap-0.5"
-              >
+              <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer"
+                className="text-xs text-primary hover:underline inline-flex items-center gap-0.5">
                 Dashboard <ExternalLink className="w-2.5 h-2.5" />
               </a>
             </div>
             <div className="space-y-2 pl-1">
               <div className="space-y-1.5">
                 <Label className="text-xs" htmlFor="sb-url">Project URL</Label>
-                <Input
-                  id="sb-url"
-                  placeholder="https://xxxxxxxxxxxx.supabase.co"
-                  value={sbUrl}
-                  onChange={(e) => setSbUrl(e.target.value)}
-                  className="h-8 text-sm font-mono"
-                />
+                <Input id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co"
+                  value={sbUrl} onChange={(e) => setSbUrl(e.target.value)} className="h-8 text-sm font-mono" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs" htmlFor="sb-anon">Anon / Public Key</Label>
-                <Input
-                  id="sb-anon"
-                  type="password"
+                <Input id="sb-anon" type="password"
                   placeholder={supabaseConfigured ? "Leave blank to keep existing key" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…"}
-                  value={sbAnonKey}
-                  onChange={(e) => setSbAnonKey(e.target.value)}
-                  className="h-8 text-sm font-mono"
-                />
+                  value={sbAnonKey} onChange={(e) => setSbAnonKey(e.target.value)} className="h-8 text-sm font-mono" />
                 <p className="text-xs text-muted-foreground">
-                  Find these under your project → Settings → API in the Supabase dashboard.
+                  Find these under your project → Settings → API.
                 </p>
               </div>
             </div>
@@ -142,27 +141,69 @@ export function ProjectSettingsDialog({
                 </div>
                 <p className="text-xs text-muted-foreground">Payments, subscriptions &amp; billing</p>
               </div>
-              <a
-                href="https://dashboard.stripe.com/apikeys"
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-primary hover:underline inline-flex items-center gap-0.5"
-              >
+              <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer"
+                className="text-xs text-primary hover:underline inline-flex items-center gap-0.5">
                 API Keys <ExternalLink className="w-2.5 h-2.5" />
               </a>
             </div>
             <div className="pl-1 space-y-1.5">
               <Label className="text-xs" htmlFor="stripe-key">Publishable Key</Label>
-              <Input
-                id="stripe-key"
-                placeholder="pk_live_…  or  pk_test_…"
-                value={stripeKey}
-                onChange={(e) => setStripeKey(e.target.value)}
-                className="h-8 text-sm font-mono"
-              />
+              <Input id="stripe-key" placeholder="pk_live_…  or  pk_test_…"
+                value={stripeKey} onChange={(e) => setStripeKey(e.target.value)} className="h-8 text-sm font-mono" />
               <p className="text-xs text-muted-foreground">
                 Use your publishable key only — never your secret key.
               </p>
+            </div>
+          </div>
+
+          <div className="border-t border-border" />
+
+          {/* Custom Domain */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded bg-blue-500/15 flex items-center justify-center shrink-0">
+                <Globe className="w-3.5 h-3.5 text-blue-500" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium">Custom Domain</h3>
+                  {domainConfigured && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400">Configured</span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">Serve your published app on your own domain</p>
+              </div>
+            </div>
+            <div className="pl-1 space-y-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs" htmlFor="custom-domain">Domain</Label>
+                <Input id="custom-domain" placeholder="app.yourdomain.com"
+                  value={domain} onChange={(e) => setDomain(e.target.value)} className="h-8 text-sm font-mono" />
+              </div>
+              {domain && (
+                <div className="rounded-lg bg-muted/40 border border-border p-3 space-y-2">
+                  <p className="text-xs font-medium text-foreground">DNS Setup</p>
+                  <p className="text-xs text-muted-foreground">
+                    Add a <code className="text-foreground/80 bg-muted px-1 rounded">CNAME</code> record at your DNS provider:
+                  </p>
+                  <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-xs font-mono">
+                    <span className="text-muted-foreground">CNAME</span>
+                    <span className="text-foreground/80 truncate">{domain}</span>
+                    <span className="text-muted-foreground">→</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <code className="flex-1 text-xs text-primary bg-primary/10 rounded px-2 py-1 font-mono">
+                      proxy.appnormal.com
+                    </code>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={copyCname}>
+                      {copiedCname ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    DNS changes may take up to 48 hours to propagate.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -174,7 +215,7 @@ export function ProjectSettingsDialog({
                 : saved
                 ? <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-green-500" />
                 : null}
-              {saved ? "Saved!" : "Save Integrations"}
+              {saved ? "Saved!" : "Save Settings"}
             </Button>
           </div>
         </div>

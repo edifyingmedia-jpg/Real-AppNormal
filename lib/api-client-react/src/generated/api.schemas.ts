@@ -27,6 +27,8 @@ export interface Project {
   supabaseUrl?: string | null;
   /** @nullable */
   stripePublishableKey?: string | null;
+  /** @nullable */
+  customDomain?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,6 +60,8 @@ export interface ProjectSettingsInput {
   supabaseAnonKey?: string | null;
   /** @nullable */
   stripePublishableKey?: string | null;
+  /** @nullable */
+  customDomain?: string | null;
 }
 
 export interface GithubPushResult {
@@ -103,6 +107,8 @@ export interface ProjectWithFiles {
   supabaseUrl?: string | null;
   /** @nullable */
   stripePublishableKey?: string | null;
+  /** @nullable */
+  customDomain?: string | null;
   createdAt: string;
   updatedAt: string;
   files: ProjectFile[];
@@ -111,6 +117,8 @@ export interface ProjectWithFiles {
 export interface AnthropicConversation {
   id: number;
   title: string;
+  tokensUsed: number;
+  creditLimit: number;
   createdAt: string;
 }
 
@@ -133,6 +141,8 @@ export interface AnthropicMessageInput {
 export interface AnthropicConversationWithMessages {
   id: number;
   title: string;
+  tokensUsed: number;
+  creditLimit: number;
   createdAt: string;
   messages: AnthropicMessage[];
 }

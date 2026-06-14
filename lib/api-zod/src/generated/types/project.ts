@@ -20,6 +20,8 @@ export interface Project {
   supabaseUrl?: string | null;
   /** @nullable */
   stripePublishableKey?: string | null;
+  /** @nullable */
+  customDomain?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

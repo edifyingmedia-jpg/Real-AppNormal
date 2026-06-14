@@ -17,4 +17,6 @@ export interface ProjectSettingsInput {
   supabaseAnonKey?: string | null;
   /** @nullable */
   stripePublishableKey?: string | null;
+  /** @nullable */
+  customDomain?: string | null;
 }

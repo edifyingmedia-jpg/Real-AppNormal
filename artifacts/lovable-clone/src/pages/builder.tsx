@@ -140,6 +140,7 @@ export default function Builder() {
         projectId={projectId}
         supabaseUrl={project.supabaseUrl}
         stripePublishableKey={project.stripePublishableKey}
+        customDomain={project.customDomain}
       />
     </div>
   );

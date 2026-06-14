@@ -10,6 +10,8 @@ import type { AnthropicMessage } from './anthropicMessage';
 export interface AnthropicConversationWithMessages {
   id: number;
   title: string;
+  tokensUsed: number;
+  creditLimit: number;
   createdAt: Date;
   messages: AnthropicMessage[];
 }

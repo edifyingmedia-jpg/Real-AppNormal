@@ -9,5 +9,7 @@
 export interface AnthropicConversation {
   id: number;
   title: string;
+  tokensUsed: number;
+  creditLimit: number;
   createdAt: Date;
 }

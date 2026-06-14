@@ -10,7 +10,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Loader2, Sparkles } from "lucide-react";
+import { Send, Bot, User, Loader2, Sparkles, Zap, AlertTriangle, ArrowUp } from "lucide-react";
 
 interface ParsedFile {
   filename: string;
@@ -23,28 +23,27 @@ interface ParsedAIResponse {
   files: ParsedFile[];
 }
 
+interface CreditInfo {
+  used: number;
+  limit: number;
+  remaining: number;
+  percentage: number;
+}
+
 interface ChatPanelProps {
   projectId: number;
   conversationId: number;
 }
 
-/**
- * Robustly extract a JSON object from AI output.
- * Handles: raw JSON, ```json ... ``` fences, ``` ... ``` fences, partial JSON during streaming.
- */
 function extractJSON(text: string): ParsedAIResponse | null {
-  // Strip markdown fences if present
   const stripped = text
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```\s*$/, "")
     .trim();
 
-  // Try the stripped version first, then the original
   for (const candidate of [stripped, text]) {
-    // Find the outermost { ... }
     const start = candidate.indexOf("{");
     if (start === -1) continue;
-    // Walk backwards from the end to find the last }
     const end = candidate.lastIndexOf("}");
     if (end === -1 || end <= start) continue;
     const json = candidate.slice(start, end + 1);
@@ -54,31 +53,95 @@ function extractJSON(text: string): ParsedAIResponse | null {
         return parsed as ParsedAIResponse;
       }
     } catch {
-      // not valid yet — might be partial during streaming
+      // partial during streaming
     }
   }
   return null;
 }
 
-/**
- * Extract just the explanation from partial streaming JSON.
- * Returns null if we can't find one yet.
- */
 function extractStreamingExplanation(text: string): string | null {
-  // Try full parse first
   const full = extractJSON(text);
   if (full?.explanation) return full.explanation;
-
-  // Partial: look for "explanation": "..." even if JSON isn't closed
   const match = text.match(/"explanation"\s*:\s*"((?:[^"\\]|\\.)*)"/);
   if (match) {
-    try {
-      return JSON.parse(`"${match[1]}"`);
-    } catch {
-      return match[1];
-    }
+    try { return JSON.parse(`"${match[1]}"`); } catch { return match[1]; }
   }
   return null;
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
+  return String(n);
+}
+
+function CreditMeter({ credits }: { credits: CreditInfo }) {
+  const pct = Math.min(100, credits.percentage);
+  const remaining = credits.remaining;
+  const isLow = remaining / credits.limit <= 0.15;
+  const isExhausted = remaining <= 0;
+
+  const barColor = isExhausted
+    ? "bg-destructive"
+    : isLow
+    ? "bg-amber-500"
+    : "bg-primary";
+
+  return (
+    <div className="px-3 py-2 border-b border-sidebar-border bg-sidebar/60">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+          <Zap className="w-2.5 h-2.5" />
+          AI Credits
+        </span>
+        <span className={`text-[10px] font-medium ${isExhausted ? "text-destructive" : isLow ? "text-amber-500" : "text-muted-foreground"}`}>
+          {isExhausted ? "Exhausted" : `${formatTokens(remaining)} left`}
+        </span>
+      </div>
+      <div className="h-1 bg-muted rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+          style={{ width: `${100 - pct}%` }}
+        />
+      </div>
+      {isLow && !isExhausted && (
+        <p className="text-[10px] text-amber-500/80 mt-1">
+          Running low — upgrade for unlimited builds
+        </p>
+      )}
+      {isExhausted && (
+        <p className="text-[10px] text-destructive/80 mt-1">
+          Upgrade to AppNormal Pro to continue building
+        </p>
+      )}
+    </div>
+  );
+}
+
+function UpgradeBanner({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div className="mx-3 mb-2 rounded-xl bg-gradient-to-br from-primary/20 to-purple-500/10 border border-primary/20 p-3 text-xs">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="font-semibold text-foreground mb-0.5 flex items-center gap-1">
+            <Zap className="w-3 h-3 text-primary" />
+            Upgrade to Pro
+          </p>
+          <p className="text-muted-foreground leading-relaxed">
+            Get unlimited AI builds, priority generation, and early access to new features.
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 mt-2.5">
+        <Button size="sm" className="h-7 text-xs flex-1 gap-1" onClick={() => window.open("https://appnormal.com/pricing", "_blank")}>
+          <ArrowUp className="w-3 h-3" />
+          Upgrade Now
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onDismiss}>
+          Later
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
@@ -87,6 +150,9 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
   const [streamingExplanation, setStreamingExplanation] = useState<string | null>(null);
   const [streamingPhase, setStreamingPhase] = useState<"thinking" | "writing" | "applying">("thinking");
   const [streamError, setStreamError] = useState<string | null>(null);
+  const [streamWarning, setStreamWarning] = useState<string | null>(null);
+  const [credits, setCredits] = useState<CreditInfo | null>(null);
+  const [showUpgradeBanner, setShowUpgradeBanner] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
@@ -100,7 +166,18 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
 
   const messages = conversation?.messages ?? [];
 
-  // Scroll to bottom whenever messages or streaming content changes
+  // Initialize credit display from conversation data
+  useEffect(() => {
+    if (conversation && credits === null) {
+      setCredits({
+        used: conversation.tokensUsed,
+        limit: conversation.creditLimit,
+        remaining: conversation.creditLimit - conversation.tokensUsed,
+        percentage: Math.round((conversation.tokensUsed / conversation.creditLimit) * 100),
+      });
+    }
+  }, [conversation, credits]);
+
   useEffect(() => {
     const el = scrollAreaRef.current;
     if (el) {
@@ -127,11 +204,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
         } else {
           await createFile.mutateAsync({
             id: projectId,
-            data: {
-              filename: file.filename,
-              content: file.content,
-              language: file.language,
-            },
+            data: { filename: file.filename, content: file.content, language: file.language },
           });
         }
       }
@@ -141,18 +214,19 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
     [projectId, createFile, updateFile, queryClient]
   );
 
+  const isCreditsExhausted = credits !== null && credits.remaining <= 0;
+
   const sendMessage = async () => {
     const trimmed = input.trim();
-    if (!trimmed || isStreaming) return;
+    if (!trimmed || isStreaming || isCreditsExhausted) return;
 
     setInput("");
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
     setIsStreaming(true);
     setStreamingExplanation(null);
     setStreamingPhase("thinking");
     setStreamError(null);
+    setStreamWarning(null);
 
     try {
       const response = await fetch(
@@ -164,9 +238,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
         }
       );
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       if (!response.body) throw new Error("No response body");
 
       const reader = response.body.getReader();
@@ -174,6 +246,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
       let buffer = "";
       let fullText = "";
       let serverError: string | null = null;
+      let serverWarning: string | null = null;
 
       outer: while (true) {
         const { done, value } = await reader.read();
@@ -188,8 +261,25 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
           try {
             const data = JSON.parse(line.slice(6));
             if (data.done) break outer;
-            if (data.error) {
-              serverError = data.error as string;
+
+            if (data.credits) {
+              setCredits(data.credits as CreditInfo);
+              queryClient.invalidateQueries({ queryKey: getGetAnthropicConversationQueryKey(conversationId) });
+            }
+
+            if (data.warning === "LOW_CREDITS") {
+              serverWarning = data.message as string;
+              setShowUpgradeBanner(true);
+            }
+
+            if (data.error === "CREDITS_EXHAUSTED") {
+              serverError = data.message as string;
+              if (data.credits) setCredits(data.credits as CreditInfo);
+              setShowUpgradeBanner(true);
+            } else if (data.error === "TRUNCATED") {
+              serverError = data.message as string;
+            } else if (data.error) {
+              serverError = data.message ?? data.error as string;
             } else if (data.content) {
               fullText += data.content;
               if (streamingPhase === "thinking") setStreamingPhase("writing");
@@ -197,15 +287,16 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
               if (expl) setStreamingExplanation(expl);
             }
           } catch {
-            // skip malformed SSE chunk
+            // skip malformed chunk
           }
         }
       }
 
+      if (serverWarning && !serverError) setStreamWarning(serverWarning);
+
       if (serverError) {
         setStreamError(serverError);
       } else {
-        // Apply files to project
         setStreamingPhase("applying");
         const parsed = extractJSON(fullText);
         if (parsed?.files?.length) {
@@ -215,9 +306,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
         }
       }
 
-      queryClient.invalidateQueries({
-        queryKey: getGetAnthropicConversationQueryKey(conversationId),
-      });
+      queryClient.invalidateQueries({ queryKey: getGetAnthropicConversationQueryKey(conversationId) });
     } catch (err) {
       setStreamError(err instanceof Error ? `Error: ${err.message}` : "Failed to get response.");
     } finally {
@@ -234,11 +323,9 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
     }
   };
 
-  /** Display text for a stored assistant message — strip the raw JSON, show explanation */
   const displayAssistantMessage = (content: string) => {
     const parsed = extractJSON(content);
     if (parsed?.explanation) return parsed.explanation;
-    // Fallback: show raw content but strip obvious JSON bulk
     if (content.trim().startsWith("{")) return "Generated your app files.";
     return content;
   };
@@ -260,8 +347,11 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
         <p className="text-xs text-muted-foreground mt-0.5">Describe what you want to build</p>
       </div>
 
+      {/* Credit meter */}
+      {credits !== null && <CreditMeter credits={credits} />}
+
       {/* Messages */}
-      <ScrollArea className="flex-1 px-3 py-4" ref={scrollAreaRef as any}>
+      <ScrollArea className="flex-1 px-3 py-4" ref={scrollAreaRef as React.Ref<HTMLDivElement>}>
         <div className="space-y-4">
           {isLoading && (
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
@@ -271,7 +361,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
           )}
 
           {messages.length === 0 && !isLoading && !isStreaming && (
-            <div className="text-center py-12 px-4">
+            <div className="text-center py-10 px-4">
               <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Sparkles className="w-6 h-6 text-primary" />
               </div>
@@ -279,6 +369,17 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Describe any web app — todo list, dashboard, game, landing page — and I'll generate it instantly.
               </p>
+              <div className="mt-4 space-y-1.5">
+                {["Build a Kanban board with drag-and-drop", "Create a Pomodoro timer app", "Make a notes app with markdown support"].map((prompt) => (
+                  <button
+                    key={prompt}
+                    onClick={() => setInput(prompt)}
+                    className="w-full text-left px-3 py-2 rounded-lg bg-secondary/60 hover:bg-secondary border border-border/50 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -294,11 +395,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
                     : "bg-muted border border-border text-muted-foreground"
                 }`}
               >
-                {msg.role === "user" ? (
-                  <User className="w-3 h-3" />
-                ) : (
-                  <Bot className="w-3 h-3" />
-                )}
+                {msg.role === "user" ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
               </div>
               <div
                 className={`max-w-[84%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
@@ -307,12 +404,22 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
                     : "bg-secondary/60 text-foreground border border-border/50 rounded-tl-sm"
                 }`}
               >
-                {msg.role === "assistant"
-                  ? displayAssistantMessage(msg.content)
-                  : msg.content}
+                {msg.role === "assistant" ? displayAssistantMessage(msg.content) : msg.content}
               </div>
             </div>
           ))}
+
+          {/* Warning bubble */}
+          {streamWarning && !isStreaming && (
+            <div className="flex gap-2.5 flex-row">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-500">
+                <AlertTriangle className="w-3 h-3" />
+              </div>
+              <div className="max-w-[84%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-tl-sm">
+                {streamWarning}
+              </div>
+            </div>
+          )}
 
           {/* Error bubble */}
           {streamError && !isStreaming && (
@@ -362,42 +469,59 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
         </div>
       </ScrollArea>
 
+      {/* Upgrade banner */}
+      {showUpgradeBanner && (
+        <UpgradeBanner onDismiss={() => setShowUpgradeBanner(false)} />
+      )}
+
       {/* Input */}
       <div className="p-3 border-t border-sidebar-border shrink-0">
-        <div className="flex gap-2 items-end bg-secondary/40 rounded-xl border border-border/60 px-3 py-2 focus-within:border-primary/50 transition-colors">
-          <textarea
-            ref={textareaRef}
-            data-testid="input-chat-message"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe the app you want to build..."
-            rows={1}
-            disabled={isStreaming}
-            className="flex-1 bg-transparent resize-none outline-none text-sm text-foreground placeholder:text-muted-foreground min-h-[24px] max-h-[120px] leading-6 py-0.5 disabled:opacity-50"
-            onInput={(e) => {
-              const el = e.currentTarget;
-              el.style.height = "auto";
-              el.style.height = Math.min(el.scrollHeight, 120) + "px";
-            }}
-          />
-          <Button
-            size="sm"
-            data-testid="btn-send-message"
-            onClick={sendMessage}
-            disabled={!input.trim() || isStreaming}
-            className="h-7 w-7 p-0 shrink-0 rounded-lg"
-          >
-            {isStreaming ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Send className="w-3.5 h-3.5" />
-            )}
-          </Button>
-        </div>
-        <p className="text-[11px] text-muted-foreground/60 mt-1.5 px-1">
-          Enter to send · Shift+Enter for new line
-        </p>
+        {isCreditsExhausted ? (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-center">
+            <p className="text-xs text-destructive font-medium mb-2">Credits exhausted</p>
+            <Button
+              size="sm"
+              className="w-full h-7 text-xs gap-1"
+              onClick={() => window.open("https://appnormal.com/pricing", "_blank")}
+            >
+              <Zap className="w-3 h-3" />
+              Upgrade to Pro — Unlimited Builds
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-2 items-end bg-secondary/40 rounded-xl border border-border/60 px-3 py-2 focus-within:border-primary/50 transition-colors">
+              <textarea
+                ref={textareaRef}
+                data-testid="input-chat-message"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Describe the app you want to build..."
+                rows={1}
+                disabled={isStreaming}
+                className="flex-1 bg-transparent resize-none outline-none text-sm text-foreground placeholder:text-muted-foreground min-h-[24px] max-h-[120px] leading-6 py-0.5 disabled:opacity-50"
+                onInput={(e) => {
+                  const el = e.currentTarget;
+                  el.style.height = "auto";
+                  el.style.height = Math.min(el.scrollHeight, 120) + "px";
+                }}
+              />
+              <Button
+                size="sm"
+                data-testid="btn-send-message"
+                onClick={sendMessage}
+                disabled={!input.trim() || isStreaming}
+                className="h-7 w-7 p-0 shrink-0 rounded-lg"
+              >
+                {isStreaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground/60 mt-1.5 px-1">
+              Enter to send · Shift+Enter for new line
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
