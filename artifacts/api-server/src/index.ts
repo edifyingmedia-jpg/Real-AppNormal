@@ -3,7 +3,13 @@ import { getStripeSync } from "./routes/stripe/stripeClient";
 import app from "./app";
 import { logger } from "./lib/logger";
 
-async function initStripe() {
+// Run Stripe initialization once per cold start
+let stripeInitialized = false;
+
+async function initStripeOnce() {
+  if (stripeInitialized) return;
+  stripeInitialized = true;
+
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
     logger.warn("DATABASE_URL not set — skipping Stripe init");
@@ -33,33 +39,19 @@ async function initStripe() {
     stripeSync
       .syncBackfill()
       .then(() => logger.info("Stripe data synced"))
-      .catch((err: any) => logger.error({ err }, "Error syncing Stripe data"));
+      .catch((err: any) =>
+        logger.error({ err }, "Error syncing Stripe data"),
+      );
   } catch (error) {
-    logger.warn({ err: String(error) }, "Stripe init skipped (integration may not be connected yet)");
+    logger.warn(
+      { err: String(error) },
+      "Stripe init skipped (integration may not be connected yet)",
+    );
   }
 }
 
-const rawPort = process.env["PORT"];
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
+// ⭐ Vercel Serverless Handler
+export default async function handler(req, res) {
+  await initStripeOnce();
+  return app(req, res);
 }
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-await initStripe();
-
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
-
-  logger.info({ port }, "Server listening");
-});
