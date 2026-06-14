@@ -3,129 +3,55 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AppNormal – Build Better Apps</title>
-  <link rel="stylesheet" href="/styles/landing.css" />
+  <title>AppNormal – Build Smarter</title>
+  <link rel="stylesheet" href="/styles.css" />
 </head>
+<body class="bg-gray-50 text-gray-900">
 
-<body>
-
-  <!-- TOP NAV -->
-  <header class="nav">
-    <img src="/assets/appnormal-logo.svg" class="logo" />
-    <nav>
-      <a href="#pricing">Pricing</a>
-      <a href="/workspace.html">Workspace</a>
-      <a href="/login.html" class="btn">Sign In</a>
-    </nav>
+  <header class="p-6 shadow bg-white">
+    <h1 class="text-3xl font-bold">AppNormal</h1>
   </header>
 
-  <!-- HERO -->
-  <section class="hero">
-    <h1>Build apps the normal way — the AppNormal way.</h1>
-    <p>Describe your idea. Watch it come alive instantly.</p>
+  <main class="max-w-4xl mx-auto p-8">
+    <section class="mb-12">
+      <h2 class="text-4xl font-bold mb-4">Membership Plans</h2>
+      <p class="text-lg mb-6">Choose the plan that fits your workflow.</p>
 
-    <div class="hero-actions">
-      <input id="landingPrompt" placeholder="Describe your app…" />
-      <button onclick="startBuilding()">Start Building</button>
-    </div>
-  </section>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-  <!-- PRICING -->
-  <section id="pricing" class="pricing">
-    <h2>Membership Plans</h2>
+        <!-- Starter -->
+        <div class="p-6 bg-white shadow rounded">
+          <h3 class="text-2xl font-semibold mb-2">Starter</h3>
+          <p class="text-gray-600 mb-4">For light usage and testing.</p>
+          <p class="text-3xl font-bold mb-4">$9/mo</p>
+          <p class="mb-4">Includes <strong>100 credits</strong></p>
+        </div>
 
-    <div class="plans">
+        <!-- Creator -->
+        <div class="p-6 bg-white shadow rounded">
+          <h3 class="text-2xl font-semibold mb-2">Creator</h3>
+          <p class="text-gray-600 mb-4">For active builders.</p>
+          <p class="text-3xl font-bold mb-4">$19/mo</p>
+          <p class="mb-4">Includes <strong>250 credits</strong></p>
+        </div>
 
-      <!-- CREATOR MONTHLY -->
-      <div class="plan">
-        <h3>Creator</h3>
-        <p class="price">$12.99 / month</p>
-        <button onclick="checkout('price_1TcWrm3KBCLmbd6Asc5rZJ4E')">
-          Choose Creator Monthly
-        </button>
+        <!-- Studio (UPDATED) -->
+        <div class="p-6 bg-white shadow rounded border-2 border-blue-500">
+          <h3 class="text-2xl font-semibold mb-2">Studio</h3>
+          <p class="text-gray-600 mb-4">For serious creators and production apps.</p>
+          <p class="text-3xl font-bold mb-4">$29/mo</p>
+          <p class="mb-4">Includes <strong>500 credits</strong></p>
+        </div>
+
       </div>
+    </section>
 
-      <!-- CREATOR YEARLY -->
-      <div class="plan">
-        <h3>Creator Yearly</h3>
-        <p class="price">$129 / year</p>
-        <button onclick="checkout('price_1TcWtR3KBCLmbd6AakZHA1be')">
-          Choose Creator Yearly
-        </button>
-      </div>
-
-      <!-- STUDIO MONTHLY -->
-      <div class="plan">
-        <h3>Studio</h3>
-        <p class="price">$29.99 / month</p>
-        <button onclick="checkout('price_1TcWw33KBCLmbd6ArosotaPG')">
-          Choose Studio Monthly
-        </button>
-      </div>
-
-      <!-- STUDIO YEARLY -->
-      <div class="plan">
-        <h3>Studio Yearly</h3>
-        <p class="price">$299 / year</p>
-        <button onclick="checkout('price_1TcWxL3KBCLmbd6AJ2MI5uU0')">
-          Choose Studio Yearly
-        </button>
-      </div>
-
-    </div>
-
-    <h2>Credit Bundles</h2>
-
-    <div class="bundles">
-
-      <div class="bundle">
-        <h3>100 Credits</h3>
-        <p class="price">$7.99</p>
-        <button onclick="checkout('price_1TcWyu3KBCLmbd6AI7NUrV0o')">
-          Buy 100 Credits
-        </button>
-      </div>
-
-      <div class="bundle">
-        <h3>200 Credits</h3>
-        <p class="price">$14.99</p>
-        <button onclick="checkout('price_1TcX023KBCLmbd6Aw4QlY7cw')">
-          Buy 200 Credits
-        </button>
-      </div>
-
-      <div class="bundle">
-        <h3>300 Credits</h3>
-        <p class="price">$21.99</p>
-        <button onclick="checkout('price_1TcX1N3KBCLmbd6AQLQLWct7')">
-          Buy 300 Credits
-        </button>
-      </div>
-
-    </div>
-  </section>
-
-  <script>
-    function startBuilding() {
-      const prompt = document.getElementById("landingPrompt").value;
-      window.location.href = "/workspace.html?prompt=" + encodeURIComponent(prompt);
-    }
-
-    async function checkout(priceId) {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          priceId,
-          successUrl: window.location.origin + "/success.html",
-          cancelUrl: window.location.origin + "/cancel.html"
-        })
-      });
-
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-    }
-  </script>
+    <section>
+      <a href="/workspace.html" class="px-6 py-3 bg-blue-600 text-white rounded shadow">
+        Go to Workspace
+      </a>
+    </section>
+  </main>
 
 </body>
 </html>
