@@ -6,6 +6,7 @@ import publishedRouter from "./published";
 import scrapeRouter from "./scrape";
 import stripeRouter from "./stripe";
 import usersRouter from "./users";
+import aiProxyRouter from "./ai-proxy";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(publishedRouter);
 router.use(scrapeRouter);
 router.use(stripeRouter);
 router.use(usersRouter);
+router.use(aiProxyRouter);
 
 export default router;

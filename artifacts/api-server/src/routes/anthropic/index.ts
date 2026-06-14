@@ -258,65 +258,50 @@ Storage patterns:
 IMPORTANT: Always implement full auth flow (sign up / sign in / sign out), protect routes, and handle auth state persistently using onAuthStateChange.`;
   }
 
-  const projectOpenaiKey = project?.openaiApiKey ?? process.env.OPENAI_API_KEY;
-  const projectGeminiKey = project?.geminiApiKey ?? process.env.GEMINI_API_KEY;
+  const hasOpenaiKey = !!(project?.openaiApiKey ?? process.env.OPENAI_API_KEY);
+  const hasGeminiKey = !!(project?.geminiApiKey ?? process.env.GEMINI_API_KEY);
 
-  if (projectOpenaiKey) {
+  if (hasOpenaiKey) {
     integrationContext += `
 
 === OPENAI INTEGRATION ===
-API Key: ${projectOpenaiKey}
+An OpenAI API key is configured for this project. NEVER embed API keys in client-side code.
+Instead, route all OpenAI calls through the secure backend proxy at /api/ai-proxy/${project?.id}/openai
 
-Include OpenAI via CDN:
-<script type="module">
-  // Use fetch to call the OpenAI REST API directly (CDN doesn't have an official browser SDK)
-  // Always use HTTPS, never expose secret keys in production client code (this is a dev prototype)
-</script>
-
-Pattern for calling OpenAI REST API from a browser app:
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+Proxy call pattern (browser-safe, no key exposure):
+  const response = await fetch('/api/ai-proxy/${project?.id}/openai', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ${projectOpenaiKey}',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: userMessage }],
-      stream: false,
     }),
   })
   const data = await response.json()
   const reply = data.choices[0].message.content
 
-Pattern for streaming responses:
-  // Set stream: true and read response.body as a ReadableStream
-  // Parse SSE data lines and extract delta.content from each chunk
-
-Use this key whenever the app needs AI text generation, chat, or completion features.`;
+The proxy accepts the same request body as the OpenAI /v1/chat/completions endpoint and returns the same response. Use this whenever the app needs AI text generation, chat, or completion features.`;
   }
 
-  if (projectGeminiKey) {
+  if (hasGeminiKey) {
     integrationContext += `
 
 === GOOGLE GEMINI INTEGRATION ===
-API Key: ${projectGeminiKey}
+A Gemini API key is configured for this project. NEVER embed API keys in client-side code.
+Instead, route all Gemini calls through the secure backend proxy at /api/ai-proxy/${project?.id}/gemini
 
-Call Gemini via REST API from browser:
-  const response = await fetch(
-    \`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${projectGeminiKey}\`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: userMessage }] }],
-      }),
-    }
-  )
+Proxy call pattern (browser-safe, no key exposure):
+  const response = await fetch('/api/ai-proxy/${project?.id}/gemini?model=gemini-2.0-flash', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: userMessage }] }],
+    }),
+  })
   const data = await response.json()
   const reply = data.candidates[0].content.parts[0].text
 
-Use this key whenever the app needs AI text generation, chat, or completion features via Gemini.`;
+The proxy forwards requests to the Gemini generateContent API. Use this whenever the app needs AI text generation or completion features via Gemini.`;
   }
 
   if (project?.stripePublishableKey) {
