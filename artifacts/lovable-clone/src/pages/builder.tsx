@@ -1,5 +1,6 @@
 import { useParams, Link } from "wouter";
-import { useGetProject, useListProjectFiles } from "@workspace/api-client-react";
+import { useGetProject, useListProjectFiles, useUpdateProjectSettings, getGetProjectQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChatPanel } from "@/components/chat-panel";
 import { CodeEditor } from "@/components/code-editor";
 import { PreviewPanel, type PreviewError } from "@/components/preview-panel";
@@ -7,21 +8,40 @@ import { PublishDialog } from "@/components/publish-dialog";
 import { GitHubPushDialog } from "@/components/github-push-dialog";
 import { ProjectSettingsDialog } from "@/components/project-settings-dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, TerminalSquare, Globe, Github, Settings } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronLeft, TerminalSquare, Globe, Github, Settings, ChevronDown, Sparkles } from "lucide-react";
 import { useState } from "react";
+
+const AI_MODELS = [
+  { id: "claude-opus-4-5", label: "Claude Opus 4", provider: "Anthropic", color: "text-orange-400" },
+  { id: "gpt-4.1", label: "GPT-4.1", provider: "OpenAI", color: "text-green-400" },
+  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", provider: "Google", color: "text-blue-400" },
+] as const;
+
+type AiModelId = typeof AI_MODELS[number]["id"];
 
 export default function Builder() {
   const params = useParams();
   const projectId = parseInt(params.id || "0", 10);
+  const queryClient = useQueryClient();
 
   const { data: project, isLoading: projectLoading } = useGetProject(projectId);
   const { data: files, isLoading: filesLoading } = useListProjectFiles(projectId);
+  const updateSettings = useUpdateProjectSettings();
 
   const [activeFileId, setActiveFileId] = useState<number | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
   const [githubOpen, setGithubOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [previewErrors, setPreviewErrors] = useState<PreviewError[]>([]);
+  const [modelSwitching, setModelSwitching] = useState(false);
 
   if (projectLoading || filesLoading) {
     return (
@@ -41,6 +61,19 @@ export default function Builder() {
 
   const currentActiveFileId = activeFileId || (files && files.length > 0 ? files[0].id : null);
   const hasFiles = (files?.length ?? 0) > 0;
+
+  const currentModel = AI_MODELS.find((m) => m.id === (project.aiModel ?? "claude-opus-4-5")) ?? AI_MODELS[0];
+
+  const handleModelChange = async (modelId: AiModelId) => {
+    if (modelId === project.aiModel || modelSwitching) return;
+    setModelSwitching(true);
+    try {
+      await updateSettings.mutateAsync({ id: projectId, data: { aiModel: modelId } });
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    } finally {
+      setModelSwitching(false);
+    }
+  };
 
   return (
     <div className="h-screen w-full bg-background text-foreground flex flex-col overflow-hidden">
@@ -66,12 +99,47 @@ export default function Builder() {
 
         {/* Toolbar */}
         <div className="flex items-center gap-1 shrink-0">
+          {/* AI Model Picker */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2.5 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                disabled={modelSwitching}
+              >
+                <Sparkles className={`w-3.5 h-3.5 ${currentModel.color}`} />
+                <span className="hidden sm:inline">{currentModel.label}</span>
+                <ChevronDown className="w-3 h-3 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">AI Model</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {AI_MODELS.map((model) => (
+                <DropdownMenuItem
+                  key={model.id}
+                  onClick={() => handleModelChange(model.id)}
+                  className="flex items-center justify-between gap-2 cursor-pointer"
+                >
+                  <div>
+                    <div className={`text-xs font-medium ${model.color}`}>{model.label}</div>
+                    <div className="text-[10px] text-muted-foreground">{model.provider}</div>
+                  </div>
+                  {currentModel.id === model.id && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button
             variant="ghost"
             size="sm"
             className="h-7 px-2.5 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
             onClick={() => setSettingsOpen(true)}
-            title="Integrations (Supabase, Stripe)"
+            title="Integrations & Settings"
           >
             <Settings className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Integrations</span>
@@ -165,6 +233,7 @@ export default function Builder() {
         supabaseUrl={project.supabaseUrl}
         stripePublishableKey={project.stripePublishableKey}
         customDomain={project.customDomain}
+        aiModel={(project.aiModel ?? "claude-opus-4-5") as AiModelId}
       />
     </div>
   );

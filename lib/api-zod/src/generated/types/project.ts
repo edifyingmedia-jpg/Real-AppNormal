@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ProjectAiModel } from './projectAiModel';
 
 export interface Project {
   id: number;
@@ -22,6 +23,7 @@ export interface Project {
   stripePublishableKey?: string | null;
   /** @nullable */
   customDomain?: string | null;
+  aiModel: ProjectAiModel;
   createdAt: Date;
   updatedAt: Date;
 }

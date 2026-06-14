@@ -510,6 +510,9 @@ components:
           type: ["string", "null"]
         customDomain:
           type: ["string", "null"]
+        aiModel:
+          type: string
+          enum: ["claude-opus-4-5", "gpt-4.1", "gemini-2.5-flash"]
         createdAt:
           type: string
           format: date-time
@@ -520,6 +523,7 @@ components:
         - id
         - name
         - isPublished
+        - aiModel
         - createdAt
         - updatedAt
 
@@ -565,6 +569,13 @@ components:
         stripePublishableKey:
           type: ["string", "null"]
         customDomain:
+          type: ["string", "null"]
+        aiModel:
+          type: ["string", "null"]
+          enum: ["claude-opus-4-5", "gpt-4.1", "gemini-2.5-flash", null]
+        openaiApiKey:
+          type: ["string", "null"]
+        geminiApiKey:
           type: ["string", "null"]
 
     GithubPushResult:
@@ -656,6 +667,9 @@ components:
           type: ["string", "null"]
         customDomain:
           type: ["string", "null"]
+        aiModel:
+          type: string
+          enum: ["claude-opus-4-5", "gpt-4.1", "gemini-2.5-flash"]
         createdAt:
           type: string
           format: date-time

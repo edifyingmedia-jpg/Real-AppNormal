@@ -186,9 +186,12 @@ router.patch("/projects/:id/settings", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  // aiModel cannot be null (has DB default) — strip it if null was sent
+  const { aiModel, ...restSettings } = parsed.data;
+  const updateData = aiModel != null ? { ...restSettings, aiModel } : restSettings;
   const [project] = await db
     .update(projectsTable)
-    .set(parsed.data)
+    .set(updateData)
     .where(eq(projectsTable.id, params.data.id))
     .returning();
   if (!project) {

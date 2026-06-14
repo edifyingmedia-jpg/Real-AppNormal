@@ -13,6 +13,15 @@ export interface ApiError {
   error: string;
 }
 
+export type ProjectAiModel = typeof ProjectAiModel[keyof typeof ProjectAiModel];
+
+
+export const ProjectAiModel = {
+  'claude-opus-4-5': 'claude-opus-4-5',
+  'gpt-41': 'gpt-4.1',
+  'gemini-25-flash': 'gemini-2.5-flash',
+} as const;
+
 export interface Project {
   id: number;
   name: string;
@@ -29,6 +38,7 @@ export interface Project {
   stripePublishableKey?: string | null;
   /** @nullable */
   customDomain?: string | null;
+  aiModel: ProjectAiModel;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,6 +59,18 @@ export interface PublishProjectInput {
   isPublished: boolean;
 }
 
+/**
+ * @nullable
+ */
+export type ProjectSettingsInputAiModel = typeof ProjectSettingsInputAiModel[keyof typeof ProjectSettingsInputAiModel] | null;
+
+
+export const ProjectSettingsInputAiModel = {
+  'claude-opus-4-5': 'claude-opus-4-5',
+  'gpt-41': 'gpt-4.1',
+  'gemini-25-flash': 'gemini-2.5-flash',
+} as const;
+
 export interface ProjectSettingsInput {
   /** @nullable */
   githubRepo?: string | null;
@@ -62,6 +84,12 @@ export interface ProjectSettingsInput {
   stripePublishableKey?: string | null;
   /** @nullable */
   customDomain?: string | null;
+  /** @nullable */
+  aiModel?: ProjectSettingsInputAiModel;
+  /** @nullable */
+  openaiApiKey?: string | null;
+  /** @nullable */
+  geminiApiKey?: string | null;
 }
 
 export interface GithubPushResult {
@@ -93,6 +121,15 @@ export interface ProjectFileUpdate {
   language?: string;
 }
 
+export type ProjectWithFilesAiModel = typeof ProjectWithFilesAiModel[keyof typeof ProjectWithFilesAiModel];
+
+
+export const ProjectWithFilesAiModel = {
+  'claude-opus-4-5': 'claude-opus-4-5',
+  'gpt-41': 'gpt-4.1',
+  'gemini-25-flash': 'gemini-2.5-flash',
+} as const;
+
 export interface ProjectWithFiles {
   id: number;
   name: string;
@@ -109,6 +146,7 @@ export interface ProjectWithFiles {
   stripePublishableKey?: string | null;
   /** @nullable */
   customDomain?: string | null;
+  aiModel?: ProjectWithFilesAiModel;
   createdAt: string;
   updatedAt: string;
   files: ProjectFile[];

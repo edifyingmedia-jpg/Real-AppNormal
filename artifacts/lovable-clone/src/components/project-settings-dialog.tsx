@@ -11,7 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Database, CreditCard, Globe, Loader2, CheckCircle2, ExternalLink, Copy, Check } from "lucide-react";
+import { Database, CreditCard, Globe, Loader2, CheckCircle2, ExternalLink, Copy, Check, Bot } from "lucide-react";
+
+type AiModelId = "claude-opus-4-5" | "gpt-4.1" | "gemini-2.5-flash";
 
 interface ProjectSettingsDialogProps {
   open: boolean;
@@ -20,6 +22,7 @@ interface ProjectSettingsDialogProps {
   supabaseUrl: string | null | undefined;
   stripePublishableKey: string | null | undefined;
   customDomain: string | null | undefined;
+  aiModel: AiModelId;
 }
 
 export function ProjectSettingsDialog({
@@ -29,11 +32,14 @@ export function ProjectSettingsDialog({
   supabaseUrl,
   stripePublishableKey,
   customDomain,
+  aiModel,
 }: ProjectSettingsDialogProps) {
   const [sbUrl, setSbUrl] = useState(supabaseUrl ?? "");
   const [sbAnonKey, setSbAnonKey] = useState("");
   const [stripeKey, setStripeKey] = useState(stripePublishableKey ?? "");
   const [domain, setDomain] = useState(customDomain ?? "");
+  const [openaiKey, setOpenaiKey] = useState("");
+  const [geminiKey, setGeminiKey] = useState("");
   const [saved, setSaved] = useState(false);
   const [copiedCname, setCopiedCname] = useState(false);
   const queryClient = useQueryClient();
@@ -45,6 +51,8 @@ export function ProjectSettingsDialog({
       setSbAnonKey("");
       setStripeKey(stripePublishableKey ?? "");
       setDomain(customDomain ?? "");
+      setOpenaiKey("");
+      setGeminiKey("");
       setSaved(false);
     }
   }, [open, supabaseUrl, stripePublishableKey, customDomain]);
@@ -58,6 +66,8 @@ export function ProjectSettingsDialog({
         supabaseAnonKey: sbAnonKey || null,
         stripePublishableKey: stripeKey || null,
         customDomain: domain || null,
+        openaiApiKey: openaiKey || null,
+        geminiApiKey: geminiKey || null,
       },
     });
     queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
@@ -75,6 +85,12 @@ export function ProjectSettingsDialog({
   const stripeConfigured = !!stripePublishableKey;
   const domainConfigured = !!customDomain;
 
+  const aiProviderForModel: Record<AiModelId, string> = {
+    "claude-opus-4-5": "Anthropic (Claude)",
+    "gpt-4.1": "OpenAI (GPT-4.1)",
+    "gemini-2.5-flash": "Google (Gemini)",
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto">
@@ -86,6 +102,73 @@ export function ProjectSettingsDialog({
         </DialogHeader>
 
         <div className="space-y-6 mt-2">
+          {/* AI Integration for Generated Apps */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded bg-primary/15 flex items-center justify-center shrink-0">
+                <Bot className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium">AI APIs for your app</h3>
+                </div>
+                <p className="text-xs text-muted-foreground">Let the AI write apps that call OpenAI or Gemini directly</p>
+              </div>
+            </div>
+            <div className="rounded-lg bg-muted/30 border border-border px-3 py-2.5 text-xs text-muted-foreground">
+              Currently building with <span className="text-foreground font-medium">{aiProviderForModel[aiModel]}</span>. Switch models using the AI picker in the toolbar.
+            </div>
+            <div className="space-y-2 pl-1">
+              <div className="space-y-1.5">
+                <Label className="text-xs" htmlFor="openai-key">
+                  OpenAI API Key (for your app)
+                  <a
+                    href="https://platform.openai.com/api-keys"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-1.5 text-primary hover:underline inline-flex items-center gap-0.5"
+                  >
+                    Get key <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </Label>
+                <Input
+                  id="openai-key"
+                  type="password"
+                  placeholder="sk-…"
+                  value={openaiKey}
+                  onChange={(e) => setOpenaiKey(e.target.value)}
+                  className="h-8 text-sm font-mono"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs" htmlFor="gemini-key">
+                  Gemini API Key (for your app)
+                  <a
+                    href="https://aistudio.google.com/apikey"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-1.5 text-primary hover:underline inline-flex items-center gap-0.5"
+                  >
+                    Get key <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </Label>
+                <Input
+                  id="gemini-key"
+                  type="password"
+                  placeholder="AIza…"
+                  value={geminiKey}
+                  onChange={(e) => setGeminiKey(e.target.value)}
+                  className="h-8 text-sm font-mono"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                When set, the AI will write your app to call these APIs directly — so it can build chatbots, text generators, and other AI-powered features.
+              </p>
+            </div>
+          </div>
+
+          <div className="border-t border-border" />
+
           {/* Supabase */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">

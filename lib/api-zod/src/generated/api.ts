@@ -47,6 +47,7 @@ export const ListProjectsResponseItem = zod.object({
   "supabaseUrl": zod.string().nullish(),
   "stripePublishableKey": zod.string().nullish(),
   "customDomain": zod.string().nullish(),
+  "aiModel": zod.enum(['claude-opus-4-5', 'gpt-4.1', 'gemini-2.5-flash']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -79,6 +80,7 @@ export const GetProjectResponse = zod.object({
   "supabaseUrl": zod.string().nullish(),
   "stripePublishableKey": zod.string().nullish(),
   "customDomain": zod.string().nullish(),
+  "aiModel": zod.enum(['claude-opus-4-5', 'gpt-4.1', 'gemini-2.5-flash']).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date(),
   "files": zod.array(zod.object({
@@ -116,6 +118,7 @@ export const UpdateProjectResponse = zod.object({
   "supabaseUrl": zod.string().nullish(),
   "stripePublishableKey": zod.string().nullish(),
   "customDomain": zod.string().nullish(),
+  "aiModel": zod.enum(['claude-opus-4-5', 'gpt-4.1', 'gemini-2.5-flash']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -217,6 +220,7 @@ export const PublishProjectResponse = zod.object({
   "supabaseUrl": zod.string().nullish(),
   "stripePublishableKey": zod.string().nullish(),
   "customDomain": zod.string().nullish(),
+  "aiModel": zod.enum(['claude-opus-4-5', 'gpt-4.1', 'gemini-2.5-flash']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -235,7 +239,10 @@ export const UpdateProjectSettingsBody = zod.object({
   "supabaseUrl": zod.string().nullish(),
   "supabaseAnonKey": zod.string().nullish(),
   "stripePublishableKey": zod.string().nullish(),
-  "customDomain": zod.string().nullish()
+  "customDomain": zod.string().nullish(),
+  "aiModel": zod.union([zod.literal('claude-opus-4-5'),zod.literal('gpt-4.1'),zod.literal('gemini-2.5-flash'),zod.literal(null)]).nullish(),
+  "openaiApiKey": zod.string().nullish(),
+  "geminiApiKey": zod.string().nullish()
 })
 
 export const UpdateProjectSettingsResponse = zod.object({
@@ -248,6 +255,7 @@ export const UpdateProjectSettingsResponse = zod.object({
   "supabaseUrl": zod.string().nullish(),
   "stripePublishableKey": zod.string().nullish(),
   "customDomain": zod.string().nullish(),
+  "aiModel": zod.enum(['claude-opus-4-5', 'gpt-4.1', 'gemini-2.5-flash']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

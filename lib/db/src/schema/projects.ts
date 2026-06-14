@@ -2,6 +2,9 @@ import { pgTable, text, serial, timestamp, integer, boolean } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
+export const AI_MODELS = ["claude-opus-4-5", "gpt-4.1", "gemini-2.5-flash"] as const;
+export type AiModel = typeof AI_MODELS[number];
+
 export const projectsTable = pgTable("projects", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -14,6 +17,9 @@ export const projectsTable = pgTable("projects", {
   supabaseAnonKey: text("supabase_anon_key"),
   stripePublishableKey: text("stripe_publishable_key"),
   customDomain: text("custom_domain"),
+  aiModel: text("ai_model").$type<AiModel>().notNull().default("claude-opus-4-5"),
+  openaiApiKey: text("openai_api_key"),
+  geminiApiKey: text("gemini_api_key"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

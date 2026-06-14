@@ -11,6 +11,8 @@ import {
   SendAnthropicMessageBody,
 } from "@workspace/api-zod";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
+import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 
 const router: IRouter = Router();
 
@@ -256,6 +258,67 @@ Storage patterns:
 IMPORTANT: Always implement full auth flow (sign up / sign in / sign out), protect routes, and handle auth state persistently using onAuthStateChange.`;
   }
 
+  const projectOpenaiKey = project?.openaiApiKey ?? process.env.OPENAI_API_KEY;
+  const projectGeminiKey = project?.geminiApiKey ?? process.env.GEMINI_API_KEY;
+
+  if (projectOpenaiKey) {
+    integrationContext += `
+
+=== OPENAI INTEGRATION ===
+API Key: ${projectOpenaiKey}
+
+Include OpenAI via CDN:
+<script type="module">
+  // Use fetch to call the OpenAI REST API directly (CDN doesn't have an official browser SDK)
+  // Always use HTTPS, never expose secret keys in production client code (this is a dev prototype)
+</script>
+
+Pattern for calling OpenAI REST API from a browser app:
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ${projectOpenaiKey}',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: userMessage }],
+      stream: false,
+    }),
+  })
+  const data = await response.json()
+  const reply = data.choices[0].message.content
+
+Pattern for streaming responses:
+  // Set stream: true and read response.body as a ReadableStream
+  // Parse SSE data lines and extract delta.content from each chunk
+
+Use this key whenever the app needs AI text generation, chat, or completion features.`;
+  }
+
+  if (projectGeminiKey) {
+    integrationContext += `
+
+=== GOOGLE GEMINI INTEGRATION ===
+API Key: ${projectGeminiKey}
+
+Call Gemini via REST API from browser:
+  const response = await fetch(
+    \`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${projectGeminiKey}\`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: userMessage }] }],
+      }),
+    }
+  )
+  const data = await response.json()
+  const reply = data.candidates[0].content.parts[0].text
+
+Use this key whenever the app needs AI text generation, chat, or completion features via Gemini.`;
+  }
+
   if (project?.stripePublishableKey) {
     integrationContext += `
 
@@ -293,33 +356,92 @@ NOTE: Actual payment requires a backend for PaymentIntents. Show the UI with a n
   let fullResponse = "";
 
   const isFirstBuild = currentFiles.length === 0;
+  const systemPrompt = buildSystemPrompt(isFirstBuild, integrationContext, userCreditsRemaining);
+  const aiModel = project?.aiModel ?? "claude-opus-4-5";
 
-  const stream = anthropic.messages.stream({
-    model: "claude-opus-4-5",
-    max_tokens: 32000,
-    system: buildSystemPrompt(isFirstBuild, integrationContext, userCreditsRemaining),
-    messages: chatMessages,
-  });
+  let messageTokens = 0;
+  let wasTruncated = false;
 
-  for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      fullResponse += event.delta.text;
-      res.write(`data: ${JSON.stringify({ content: event.delta.text })}\n\n`);
+  if (aiModel === "gpt-4.1") {
+    const openaiKey = project?.openaiApiKey ?? process.env.OPENAI_API_KEY;
+    const openaiClient = new OpenAI({ apiKey: openaiKey });
+    const gptMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      { role: "system", content: systemPrompt },
+      ...chatMessages.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })),
+    ];
+    const gptStream = await openaiClient.chat.completions.create({
+      model: "gpt-4.1",
+      max_completion_tokens: 32000,
+      messages: gptMessages,
+      stream: true,
+      stream_options: { include_usage: true },
+    });
+    for await (const chunk of gptStream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) {
+        fullResponse += content;
+        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+      }
+      if (chunk.usage) {
+        messageTokens = (chunk.usage.prompt_tokens ?? 0) + (chunk.usage.completion_tokens ?? 0);
+      }
+      if (chunk.choices[0]?.finish_reason === "length") wasTruncated = true;
     }
+  } else if (aiModel === "gemini-2.5-flash") {
+    const geminiKey = project?.geminiApiKey ?? process.env.GEMINI_API_KEY;
+    const geminiClient = new GoogleGenAI({ apiKey: geminiKey! });
+    const geminiMessages = chatMessages.map((m) => ({
+      role: m.role === "assistant" ? "model" as const : "user" as const,
+      parts: [{ text: m.content }],
+    }));
+    const geminiStream = await geminiClient.models.generateContentStream({
+      model: "gemini-2.5-flash",
+      contents: geminiMessages,
+      config: {
+        systemInstruction: systemPrompt,
+        maxOutputTokens: 32000,
+      },
+    });
+    for await (const chunk of geminiStream) {
+      const text = chunk.text;
+      if (text) {
+        fullResponse += text;
+        res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
+      }
+      if (chunk.usageMetadata) {
+        messageTokens = (chunk.usageMetadata.promptTokenCount ?? 0) + (chunk.usageMetadata.candidatesTokenCount ?? 0);
+      }
+    }
+  } else {
+    // Default: Claude (Anthropic)
+    const stream = anthropic.messages.stream({
+      model: "claude-opus-4-5",
+      max_tokens: 32000,
+      system: systemPrompt,
+      messages: chatMessages,
+    });
+    for await (const event of stream) {
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        fullResponse += event.delta.text;
+        res.write(`data: ${JSON.stringify({ content: event.delta.text })}\n\n`);
+      }
+    }
+    const finalMsg = await stream.finalMessage();
+    wasTruncated = finalMsg.stop_reason === "max_tokens";
+    const usage = finalMsg.usage;
+    messageTokens = (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0);
   }
 
-  const finalMsg = await stream.finalMessage();
-  const wasTruncated = finalMsg.stop_reason === "max_tokens";
-  const usage = finalMsg.usage;
-  const messageTokens = (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0);
-
-  // Store message with token counts
+  // Store assistant message (all providers)
   await db.insert(messagesTable).values({
     conversationId,
     role: "assistant",
     content: fullResponse,
-    inputTokens: usage.input_tokens ?? 0,
-    outputTokens: usage.output_tokens ?? 0,
+    inputTokens: 0,
+    outputTokens: messageTokens,
   });
 
   // Update conversation token usage
@@ -354,10 +476,8 @@ NOTE: Actual payment requires a backend for PaymentIntents. Show the UI with a n
     res.write(`data: ${JSON.stringify({ error: "TRUNCATED", message: "Response was cut short — the app was too large. Try asking for a simpler version, or break your request into smaller steps." })}\n\n`);
   }
 
-  // Send credit update event
   res.write(`data: ${JSON.stringify({ credits })}\n\n`);
 
-  // Warn if credits are getting low
   if (newRemaining > 0 && newRemaining / creditLimit <= LOW_CREDITS_THRESHOLD) {
     res.write(`data: ${JSON.stringify({ warning: "LOW_CREDITS", credits, message: `You have ${Math.round(newRemaining / 1000)}k tokens remaining (${100 - newPercentage}%). Upgrade to AppNormal Pro for unlimited builds.` })}\n\n`);
   }

@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ProjectSettingsInputAiModel } from './projectSettingsInputAiModel';
 
 export interface ProjectSettingsInput {
   /** @nullable */
@@ -19,4 +20,10 @@ export interface ProjectSettingsInput {
   stripePublishableKey?: string | null;
   /** @nullable */
   customDomain?: string | null;
+  /** @nullable */
+  aiModel?: ProjectSettingsInputAiModel;
+  /** @nullable */
+  openaiApiKey?: string | null;
+  /** @nullable */
+  geminiApiKey?: string | null;
 }

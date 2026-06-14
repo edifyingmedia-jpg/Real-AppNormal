@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ProjectFile } from './projectFile';
+import type { ProjectWithFilesAiModel } from './projectWithFilesAiModel';
 
 export interface ProjectWithFiles {
   id: number;
@@ -23,6 +24,7 @@ export interface ProjectWithFiles {
   stripePublishableKey?: string | null;
   /** @nullable */
   customDomain?: string | null;
+  aiModel?: ProjectWithFilesAiModel;
   createdAt: Date;
   updatedAt: Date;
   files: ProjectFile[];
