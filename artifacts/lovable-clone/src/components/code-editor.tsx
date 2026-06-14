@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useUpdateProjectFile } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileCode, FileText, File } from "lucide-react";
+import { FileCode, FileText, File, Save, Check, Loader2 } from "lucide-react";
 
 interface ProjectFile {
   id: number;
@@ -19,9 +19,17 @@ interface CodeEditorProps {
   onFileSelect: (id: number) => void;
 }
 
+type SaveStatus = "saved" | "unsaved" | "saving";
+
 function getFileIcon(filename: string) {
   if (filename.endsWith(".html")) return <FileText className="w-3.5 h-3.5" />;
-  if (filename.endsWith(".css") || filename.endsWith(".js") || filename.endsWith(".ts") || filename.endsWith(".tsx")) return <FileCode className="w-3.5 h-3.5" />;
+  if (
+    filename.endsWith(".css") ||
+    filename.endsWith(".js") ||
+    filename.endsWith(".ts") ||
+    filename.endsWith(".tsx")
+  )
+    return <FileCode className="w-3.5 h-3.5" />;
   return <File className="w-3.5 h-3.5" />;
 }
 
@@ -43,6 +51,8 @@ function getLineNumbers(content: string) {
 export function CodeEditor({ projectId, files, activeFileId, onFileSelect }: CodeEditorProps) {
   const updateFile = useUpdateProjectFile();
   const [localContent, setLocalContent] = useState<Record<number, string>>({});
+  const [savedContent, setSavedContent] = useState<Record<number, string>>({});
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const debounceRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -52,10 +62,11 @@ export function CodeEditor({ projectId, files, activeFileId, onFileSelect }: Cod
   useEffect(() => {
     if (activeFile && localContent[activeFile.id] === undefined) {
       setLocalContent((prev) => ({ ...prev, [activeFile.id]: activeFile.content }));
+      setSavedContent((prev) => ({ ...prev, [activeFile.id]: activeFile.content }));
     }
   }, [activeFile]);
 
-  // Sync from external updates (e.g., AI generated new content)
+  // Sync from AI-generated updates
   useEffect(() => {
     for (const file of files) {
       setLocalContent((prev) => {
@@ -64,17 +75,72 @@ export function CodeEditor({ projectId, files, activeFileId, onFileSelect }: Cod
         }
         return prev;
       });
+      setSavedContent((prev) => {
+        if (prev[file.id] !== file.content) {
+          return { ...prev, [file.id]: file.content };
+        }
+        return prev;
+      });
     }
   }, [files]);
 
+  const isUnsaved =
+    activeFile !== null &&
+    activeFile !== undefined &&
+    localContent[activeFile.id] !== undefined &&
+    savedContent[activeFile.id] !== undefined &&
+    localContent[activeFile.id] !== savedContent[activeFile.id];
+
+  useEffect(() => {
+    setSaveStatus(isUnsaved ? "unsaved" : "saved");
+  }, [isUnsaved]);
+
+  const saveNow = useCallback(
+    async (fileId: number, value: string) => {
+      if (debounceRef.current[fileId]) {
+        clearTimeout(debounceRef.current[fileId]);
+        delete debounceRef.current[fileId];
+      }
+      setSaveStatus("saving");
+      try {
+        await updateFile.mutateAsync({ id: projectId, fileId, data: { content: value } });
+        setSavedContent((prev) => ({ ...prev, [fileId]: value }));
+        setSaveStatus("saved");
+      } catch {
+        setSaveStatus("unsaved");
+      }
+    },
+    [projectId, updateFile]
+  );
+
   const handleContentChange = (fileId: number, value: string) => {
     setLocalContent((prev) => ({ ...prev, [fileId]: value }));
+    setSaveStatus("unsaved");
 
     if (debounceRef.current[fileId]) clearTimeout(debounceRef.current[fileId]);
     debounceRef.current[fileId] = setTimeout(() => {
-      updateFile.mutate({ id: projectId, fileId, data: { content: value } });
-    }, 800);
+      saveNow(fileId, value);
+    }, 1200);
   };
+
+  const handleManualSave = () => {
+    if (activeFile && saveStatus === "unsaved") {
+      const value = localContent[activeFile.id] ?? activeFile.content;
+      saveNow(activeFile.id, value);
+    }
+  };
+
+  // Ctrl/Cmd+S shortcut
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleManualSave();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeFile, saveStatus, localContent]);
 
   const syncScroll = () => {
     if (textareaRef.current && lineNumbersRef.current) {
@@ -118,10 +184,42 @@ export function CodeEditor({ projectId, files, activeFileId, onFileSelect }: Cod
           >
             <span className={getLanguageColor(file.language)}>{getFileIcon(file.filename)}</span>
             {file.filename}
+            {/* Unsaved dot */}
+            {file.id === activeFile?.id &&
+              localContent[file.id] !== undefined &&
+              savedContent[file.id] !== undefined &&
+              localContent[file.id] !== savedContent[file.id] && (
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 ml-0.5" title="Unsaved changes" />
+              )}
           </button>
         ))}
+
+        {/* Spacer + save controls */}
         {activeFile && (
           <div className="ml-auto px-3 flex items-center gap-2 shrink-0">
+            {saveStatus === "saving" && (
+              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                Saving…
+              </span>
+            )}
+            {saveStatus === "saved" && (
+              <span className="text-[10px] text-emerald-500/80 flex items-center gap-1">
+                <Check className="w-2.5 h-2.5" />
+                Saved
+              </span>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleManualSave}
+              disabled={saveStatus !== "unsaved"}
+              className="h-6 px-2 text-[10px] gap-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
+              title="Save (Ctrl+S)"
+            >
+              <Save className="w-3 h-3" />
+              Save
+            </Button>
             <Badge variant="outline" className="text-[10px] h-5 border-border/50 text-muted-foreground">
               {activeFile.language}
             </Badge>

@@ -10,7 +10,20 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Loader2, Sparkles, Zap, AlertTriangle, ArrowUp, Link2, X } from "lucide-react";
+import {
+  Send,
+  Bot,
+  User,
+  Loader2,
+  Sparkles,
+  Zap,
+  AlertTriangle,
+  ArrowUp,
+  Link2,
+  X,
+  Wrench,
+} from "lucide-react";
+import type { PreviewError } from "@/components/preview-panel";
 
 interface ParsedFile {
   filename: string;
@@ -33,6 +46,8 @@ interface CreditInfo {
 interface ChatPanelProps {
   projectId: number;
   conversationId: number;
+  previewErrors?: PreviewError[];
+  onErrorsFixed?: () => void;
 }
 
 function extractJSON(text: string): ParsedAIResponse | null {
@@ -64,7 +79,11 @@ function extractStreamingExplanation(text: string): string | null {
   if (full?.explanation) return full.explanation;
   const match = text.match(/"explanation"\s*:\s*"((?:[^"\\]|\\.)*)"/);
   if (match) {
-    try { return JSON.parse(`"${match[1]}"`); } catch { return match[1]; }
+    try {
+      return JSON.parse(`"${match[1]}"`);
+    } catch {
+      return match[1];
+    }
   }
   return null;
 }
@@ -80,11 +99,7 @@ function CreditMeter({ credits }: { credits: CreditInfo }) {
   const isLow = remaining / credits.limit <= 0.15;
   const isExhausted = remaining <= 0;
 
-  const barColor = isExhausted
-    ? "bg-destructive"
-    : isLow
-    ? "bg-amber-500"
-    : "bg-primary";
+  const barColor = isExhausted ? "bg-destructive" : isLow ? "bg-amber-500" : "bg-primary";
 
   return (
     <div className="px-3 py-2 border-b border-sidebar-border bg-sidebar/60">
@@ -93,7 +108,9 @@ function CreditMeter({ credits }: { credits: CreditInfo }) {
           <Zap className="w-2.5 h-2.5" />
           AI Credits
         </span>
-        <span className={`text-[10px] font-medium ${isExhausted ? "text-destructive" : isLow ? "text-amber-500" : "text-muted-foreground"}`}>
+        <span
+          className={`text-[10px] font-medium ${isExhausted ? "text-destructive" : isLow ? "text-amber-500" : "text-muted-foreground"}`}
+        >
           {isExhausted ? "Exhausted" : `${formatTokens(remaining)} left`}
         </span>
       </div>
@@ -104,13 +121,11 @@ function CreditMeter({ credits }: { credits: CreditInfo }) {
         />
       </div>
       {isLow && !isExhausted && (
-        <p className="text-[10px] text-amber-500/80 mt-1">
-          Running low — upgrade for unlimited builds
-        </p>
+        <p className="text-[10px] text-amber-500/80 mt-1">Running low — upgrade for more credits</p>
       )}
       {isExhausted && (
         <p className="text-[10px] text-destructive/80 mt-1">
-          Upgrade to AppNormal Pro to continue building
+          Upgrade to continue building
         </p>
       )}
     </div>
@@ -124,17 +139,21 @@ function UpgradeBanner({ onDismiss }: { onDismiss: () => void }) {
         <div>
           <p className="font-semibold text-foreground mb-0.5 flex items-center gap-1">
             <Zap className="w-3 h-3 text-primary" />
-            Upgrade to Pro
+            Upgrade for more credits
           </p>
           <p className="text-muted-foreground leading-relaxed">
-            Get unlimited AI builds, priority generation, and early access to new features.
+            Get 100–300 credits/month plus priority generation and GitHub publishing.
           </p>
         </div>
       </div>
       <div className="flex items-center gap-2 mt-2.5">
-        <Button size="sm" className="h-7 text-xs flex-1 gap-1" onClick={() => window.open("https://appnormal.com/pricing", "_blank")}>
+        <Button
+          size="sm"
+          className="h-7 text-xs flex-1 gap-1"
+          onClick={() => (window.location.href = "/#pricing")}
+        >
           <ArrowUp className="w-3 h-3" />
-          Upgrade Now
+          View Plans
         </Button>
         <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onDismiss}>
           Later
@@ -144,7 +163,61 @@ function UpgradeBanner({ onDismiss }: { onDismiss: () => void }) {
   );
 }
 
-export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
+function ErrorFixBanner({
+  errors,
+  onFix,
+  onDismiss,
+  disabled,
+}: {
+  errors: PreviewError[];
+  onFix: () => void;
+  onDismiss: () => void;
+  disabled: boolean;
+}) {
+  const count = errors.length;
+  return (
+    <div className="mx-3 mb-2 rounded-xl bg-destructive/10 border border-destructive/25 p-3 text-xs">
+      <div className="flex items-start gap-2 mb-2">
+        <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold text-destructive">
+            {count === 1 ? "1 error detected" : `${count} errors detected`}
+          </p>
+          <p className="text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">
+            {errors[0].message}
+            {count > 1 && ` (+${count - 1} more)`}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="destructive"
+          className="h-7 text-xs flex-1 gap-1.5"
+          onClick={onFix}
+          disabled={disabled}
+        >
+          {disabled ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <Wrench className="w-3 h-3" />
+          )}
+          {disabled ? "Fixing…" : "Fix Errors"}
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onDismiss}>
+          Dismiss
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function ChatPanel({
+  projectId,
+  conversationId,
+  previewErrors = [],
+  onErrorsFixed,
+}: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingExplanation, setStreamingExplanation] = useState<string | null>(null);
@@ -153,6 +226,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
   const [streamWarning, setStreamWarning] = useState<string | null>(null);
   const [credits, setCredits] = useState<CreditInfo | null>(null);
   const [showUpgradeBanner, setShowUpgradeBanner] = useState(false);
+  const [dismissedErrors, setDismissedErrors] = useState(false);
   const [cloneMode, setCloneMode] = useState(false);
   const [cloneUrl, setCloneUrl] = useState("");
   const [isScraping, setIsScraping] = useState(false);
@@ -169,6 +243,12 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
   const updateFile = useUpdateProjectFile();
 
   const messages = conversation?.messages ?? [];
+
+  // Show errors panel whenever new errors arrive (and not dismissed)
+  const activeErrors = dismissedErrors ? [] : previewErrors;
+  useEffect(() => {
+    if (previewErrors.length > 0) setDismissedErrors(false);
+  }, [previewErrors]);
 
   // Initialize credit display from conversation data
   useEffect(() => {
@@ -227,7 +307,14 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
     setScrapeError(null);
     try {
       const res = await fetch(`/api/scrape?url=${encodeURIComponent(url)}`);
-      const data = await res.json() as { url: string; title: string; description: string; html: string; truncated: boolean; error?: string };
+      const data = (await res.json()) as {
+        url: string;
+        title: string;
+        description: string;
+        html: string;
+        truncated: boolean;
+        error?: string;
+      };
       if (!res.ok) throw new Error(data.error ?? "Failed to scrape URL");
       const message = `Clone this website faithfully — reproduce the exact layout, colors, typography, and all sections.\nURL: ${data.url}\nTitle: ${data.title}${data.description ? `\nDescription: ${data.description}` : ""}\n\nHTML source:\n${data.html}${data.truncated ? "\n\n[Note: HTML was truncated at 80kb]" : ""}`;
       setCloneMode(false);
@@ -255,14 +342,11 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
     setStreamWarning(null);
 
     try {
-      const response = await fetch(
-        `/api/anthropic/conversations/${conversationId}/messages`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: trimmed }),
-        }
-      );
+      const response = await fetch(`/api/anthropic/conversations/${conversationId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: trimmed }),
+      });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       if (!response.body) throw new Error("No response body");
@@ -290,7 +374,9 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
 
             if (data.credits) {
               setCredits(data.credits as CreditInfo);
-              queryClient.invalidateQueries({ queryKey: getGetAnthropicConversationQueryKey(conversationId) });
+              queryClient.invalidateQueries({
+                queryKey: getGetAnthropicConversationQueryKey(conversationId),
+              });
             }
 
             if (data.warning === "LOW_CREDITS") {
@@ -305,7 +391,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
             } else if (data.error === "TRUNCATED") {
               serverError = data.message as string;
             } else if (data.error) {
-              serverError = data.message ?? data.error as string;
+              serverError = (data.message ?? data.error) as string;
             } else if (data.content) {
               fullText += data.content;
               if (streamingPhase === "thinking") setStreamingPhase("writing");
@@ -327,19 +413,42 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
         const parsed = extractJSON(fullText);
         if (parsed?.files?.length) {
           await applyFilesToProject(parsed.files);
+          // Clear errors after successful fix
+          onErrorsFixed?.();
+          setDismissedErrors(true);
         } else if (fullText.trim()) {
           setStreamError("Couldn't parse the AI response into files. Try rephrasing your request.");
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: getGetAnthropicConversationQueryKey(conversationId) });
+      queryClient.invalidateQueries({
+        queryKey: getGetAnthropicConversationQueryKey(conversationId),
+      });
     } catch (err) {
-      setStreamError(err instanceof Error ? `Error: ${err.message}` : "Failed to get response.");
+      setStreamError(
+        err instanceof Error ? `Error: ${err.message}` : "Failed to get response."
+      );
     } finally {
       setIsStreaming(false);
       setStreamingExplanation(null);
       setStreamingPhase("thinking");
     }
+  };
+
+  const handleFixErrors = async () => {
+    if (!activeErrors.length || isStreaming) return;
+    const errorLines = activeErrors
+      .slice(0, 8)
+      .map((e, i) => {
+        const loc = e.line ? ` (line ${e.line}${e.col ? `, col ${e.col}` : ""})` : "";
+        return `${i + 1}. ${e.message}${loc}`;
+      })
+      .join("\n");
+
+    const message =
+      `The preview has the following JavaScript errors. Please fix all of them and review the full code for any related bugs:\n\n${errorLines}\n\nReturn a corrected version of all files with every error resolved.`;
+    setDismissedErrors(true);
+    await sendMessage(message);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -357,9 +466,9 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
   };
 
   const phaseLabel = {
-    thinking: "Thinking...",
-    writing: "Writing code...",
-    applying: "Applying files...",
+    thinking: "Thinking…",
+    writing: "Writing code…",
+    applying: "Applying files…",
   }[streamingPhase];
 
   return (
@@ -370,7 +479,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
           <Sparkles className="w-3.5 h-3.5 text-primary" />
           AI Chat
         </h2>
-        <p className="text-xs text-muted-foreground mt-0.5">Describe what you want to build</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Describe what you want to build or change</p>
       </div>
 
       {/* Credit meter */}
@@ -382,7 +491,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
           {isLoading && (
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <Loader2 className="w-3 h-3 animate-spin" />
-              Loading conversation...
+              Loading conversation…
             </div>
           )}
 
@@ -396,7 +505,11 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
                 Describe any web app — todo list, dashboard, game, landing page — and I'll generate it instantly.
               </p>
               <div className="mt-4 space-y-1.5">
-                {["Build a Kanban board with drag-and-drop", "Create a Pomodoro timer app", "Make a notes app with markdown support"].map((prompt) => (
+                {[
+                  "Build a Kanban board with drag-and-drop",
+                  "Create a Pomodoro timer app",
+                  "Make a notes app with markdown support",
+                ].map((prompt) => (
                   <button
                     key={prompt}
                     onClick={() => setInput(prompt)}
@@ -435,7 +548,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
             </div>
           ))}
 
-          {/* Warning bubble */}
+          {/* Warning */}
           {streamWarning && !isStreaming && (
             <div className="flex gap-2.5 flex-row">
               <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-500">
@@ -447,7 +560,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
             </div>
           )}
 
-          {/* Error bubble */}
+          {/* Error */}
           {streamError && !isStreaming && (
             <div className="flex gap-2.5 flex-row">
               <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-destructive/10 border border-destructive/30 text-destructive">
@@ -459,7 +572,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
             </div>
           )}
 
-          {/* Streaming bubble */}
+          {/* Streaming */}
           {isStreaming && (
             <div className="flex gap-2.5 flex-row">
               <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-muted border border-border text-muted-foreground">
@@ -476,9 +589,13 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
                 ) : (
                   <span className="flex items-center gap-2 text-muted-foreground">
                     <span className="flex gap-1">
-                      <span className="w-1.5 h-1.5 bg-primary/70 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <span className="w-1.5 h-1.5 bg-primary/70 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <span className="w-1.5 h-1.5 bg-primary/70 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                      {[0, 150, 300].map((delay) => (
+                        <span
+                          key={delay}
+                          className="w-1.5 h-1.5 bg-primary/70 rounded-full animate-bounce"
+                          style={{ animationDelay: `${delay}ms` }}
+                        />
+                      ))}
                     </span>
                     <span className="text-xs">{phaseLabel}</span>
                   </span>
@@ -486,7 +603,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
                 {streamingPhase === "applying" && (
                   <div className="mt-1.5 flex items-center gap-1.5 text-xs text-primary">
                     <Loader2 className="w-3 h-3 animate-spin" />
-                    Saving files...
+                    Saving files…
                   </div>
                 )}
               </div>
@@ -496,11 +613,19 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
       </ScrollArea>
 
       {/* Upgrade banner */}
-      {showUpgradeBanner && (
-        <UpgradeBanner onDismiss={() => setShowUpgradeBanner(false)} />
+      {showUpgradeBanner && <UpgradeBanner onDismiss={() => setShowUpgradeBanner(false)} />}
+
+      {/* Error fix banner */}
+      {activeErrors.length > 0 && !isCreditsExhausted && (
+        <ErrorFixBanner
+          errors={activeErrors}
+          onFix={handleFixErrors}
+          onDismiss={() => setDismissedErrors(true)}
+          disabled={isStreaming}
+        />
       )}
 
-      {/* Input */}
+      {/* Input area */}
       <div className="p-3 border-t border-sidebar-border shrink-0">
         {isCreditsExhausted ? (
           <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-center">
@@ -508,22 +633,24 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
             <Button
               size="sm"
               className="w-full h-7 text-xs gap-1"
-              onClick={() => window.open("https://appnormal.com/pricing", "_blank")}
+              onClick={() => (window.location.href = "/#pricing")}
             >
               <Zap className="w-3 h-3" />
-              Upgrade to Pro — Unlimited Builds
+              View Plans — Get More Credits
             </Button>
           </div>
         ) : (
           <>
-            {/* Clone URL row */}
             {cloneMode && (
               <div className="mb-2">
                 <div className="flex gap-1.5">
                   <input
                     type="url"
                     value={cloneUrl}
-                    onChange={(e) => { setCloneUrl(e.target.value); setScrapeError(null); }}
+                    onChange={(e) => {
+                      setCloneUrl(e.target.value);
+                      setScrapeError(null);
+                    }}
                     onKeyDown={(e) => e.key === "Enter" && handleClone()}
                     placeholder="https://example.com"
                     autoFocus
@@ -542,7 +669,11 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => { setCloneMode(false); setCloneUrl(""); setScrapeError(null); }}
+                    onClick={() => {
+                      setCloneMode(false);
+                      setCloneUrl("");
+                      setScrapeError(null);
+                    }}
                     className="h-7 w-7 p-0 shrink-0"
                   >
                     <X className="w-3 h-3" />
@@ -561,7 +692,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Describe the app you want to build..."
+                placeholder="Describe what to build or change…"
                 rows={1}
                 disabled={isStreaming}
                 className="flex-1 bg-transparent resize-none outline-none text-sm text-foreground placeholder:text-muted-foreground min-h-[24px] max-h-[120px] leading-6 py-0.5 disabled:opacity-50"
@@ -578,14 +709,21 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
                 disabled={!input.trim() || isStreaming}
                 className="h-7 w-7 p-0 shrink-0 rounded-lg"
               >
-                {isStreaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                {isStreaming ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
               </Button>
             </div>
             <div className="flex items-center justify-between mt-1.5 px-1">
               <p className="text-[11px] text-muted-foreground/60">Enter to send · Shift+Enter for new line</p>
               {!cloneMode && (
                 <button
-                  onClick={() => { setCloneMode(true); setScrapeError(null); }}
+                  onClick={() => {
+                    setCloneMode(true);
+                    setScrapeError(null);
+                  }}
                   disabled={isStreaming}
                   className="text-[11px] text-muted-foreground/50 hover:text-primary flex items-center gap-0.5 transition-colors disabled:pointer-events-none"
                 >

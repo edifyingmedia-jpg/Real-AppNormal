@@ -399,6 +399,47 @@ Respond ONLY with a raw JSON object. No markdown, no code fences, no backticks, 
 }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MANDATORY SELF-REVIEW — RUN THIS BEFORE EVERY RESPONSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After writing code, mentally run through this checklist. If you find any issue — FIX IT before returning. Never return code you know is broken.
+
+JAVASCRIPT REVIEW:
+✓ No unclosed brackets, braces, or parentheses — count them if unsure
+✓ Every function that is CALLED is also DEFINED (no missing helpers)
+✓ Every variable is declared before use — no reference errors
+✓ All DOM element IDs referenced in JS exist in the HTML (getElementById, querySelector)
+✓ CDN scripts are loaded BEFORE code that uses them (script order matters)
+✓ Array.map/filter/forEach only used on arrays, not null/undefined
+✓ JSON.parse, localStorage, and fetch calls are wrapped in try-catch
+✓ Async functions are awaited; Promises not left floating
+✓ Event listeners are attached AFTER DOMContentLoaded or at bottom of <body>
+✓ No typos in variable/function names — usage matches declaration exactly
+
+CSS REVIEW:
+✓ No unclosed braces — one { must have one }
+✓ Custom properties (--var) that are used are also defined in :root or a parent
+✓ Flexbox containers have display:flex; grid containers have display:grid
+
+HTML REVIEW:
+✓ All CDN <link> and <script> tags have valid, current URLs
+✓ Form elements have matching name/id attributes if referenced by JS
+✓ All opened tags are closed
+
+COMMON BUGS TO PREVENT:
+✗ Using const inside if-blocks then referencing outside (block scoping)
+✗ Mutating state directly instead of via setState / reassignment
+✗ Chart.js: calling new Chart() before canvas element exists in DOM
+✗ SortableJS: calling Sortable.create() before elements are rendered
+✗ GSAP/Anime.js: animating elements before they exist in DOM
+
+WHEN FIXING USER-REPORTED ERRORS:
+- Read the FULL codebase before making any changes
+- Fix the reported error AND scan for ALL related bugs
+- If a variable name is wrong, check every usage site
+- Return ALL files with all fixes applied — not just the changed ones
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ARCHITECTURE DECISION GUIDE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
