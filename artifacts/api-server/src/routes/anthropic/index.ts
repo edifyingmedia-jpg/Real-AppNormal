@@ -137,7 +137,7 @@ router.post("/anthropic/conversations/:id/messages", async (req, res): Promise<v
 
   const stream = anthropic.messages.stream({
     model: "claude-sonnet-4-6",
-    max_tokens: 16000,
+    max_tokens: 32768,
     system: `You are an expert full-stack web developer AI, similar to Lovable or Bolt. You build complete, beautiful, fully-functional web applications from a user's description.
 
 CRITICAL: You MUST respond with ONLY a raw JSON object — no markdown, no code fences, no backticks, no explanation outside the JSON. The entire response must be valid JSON.
@@ -153,6 +153,8 @@ Required response format:
     }
   ]
 }
+
+IMPORTANT: Keep apps self-contained in a single index.html file whenever possible. Only use multiple files for genuinely complex apps. Avoid excessive comments or whitespace — write compact, efficient code to stay within output limits.
 
 === ARCHITECTURE RULES ===
 
@@ -224,11 +226,18 @@ For dashboards:
     }
   }
 
+  const finalMsg = await stream.finalMessage();
+  const wasTruncated = finalMsg.stop_reason === "max_tokens";
+
   await db.insert(messagesTable).values({
     conversationId,
     role: "assistant",
     content: fullResponse,
   });
+
+  if (wasTruncated) {
+    res.write(`data: ${JSON.stringify({ error: "Response was too long and got cut off. Try asking for a simpler or smaller app, or break the request into smaller steps." })}\n\n`);
+  }
 
   res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   res.end();

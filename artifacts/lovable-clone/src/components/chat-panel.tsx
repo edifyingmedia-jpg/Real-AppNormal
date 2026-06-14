@@ -86,6 +86,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingExplanation, setStreamingExplanation] = useState<string | null>(null);
   const [streamingPhase, setStreamingPhase] = useState<"thinking" | "writing" | "applying">("thinking");
+  const [streamError, setStreamError] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
@@ -151,6 +152,7 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
     setIsStreaming(true);
     setStreamingExplanation(null);
     setStreamingPhase("thinking");
+    setStreamError(null);
 
     try {
       const response = await fetch(
@@ -171,8 +173,9 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
       const decoder = new TextDecoder();
       let buffer = "";
       let fullText = "";
+      let serverError: string | null = null;
 
-      while (true) {
+      outer: while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
@@ -184,10 +187,11 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
           if (!line.startsWith("data: ")) continue;
           try {
             const data = JSON.parse(line.slice(6));
-            if (data.done) break;
-            if (data.content) {
+            if (data.done) break outer;
+            if (data.error) {
+              serverError = data.error as string;
+            } else if (data.content) {
               fullText += data.content;
-              // Update streaming phase and extract partial explanation
               if (streamingPhase === "thinking") setStreamingPhase("writing");
               const expl = extractStreamingExplanation(fullText);
               if (expl) setStreamingExplanation(expl);
@@ -198,20 +202,24 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
         }
       }
 
-      // Apply files to project
-      setStreamingPhase("applying");
-      const parsed = extractJSON(fullText);
-      if (parsed?.files?.length) {
-        await applyFilesToProject(parsed.files);
+      if (serverError) {
+        setStreamError(serverError);
+      } else {
+        // Apply files to project
+        setStreamingPhase("applying");
+        const parsed = extractJSON(fullText);
+        if (parsed?.files?.length) {
+          await applyFilesToProject(parsed.files);
+        } else if (fullText.trim()) {
+          setStreamError("Couldn't parse the AI response into files. Try rephrasing your request.");
+        }
       }
 
       queryClient.invalidateQueries({
         queryKey: getGetAnthropicConversationQueryKey(conversationId),
       });
     } catch (err) {
-      setStreamingExplanation(
-        err instanceof Error ? `Error: ${err.message}` : "Failed to get response."
-      );
+      setStreamError(err instanceof Error ? `Error: ${err.message}` : "Failed to get response.");
     } finally {
       setIsStreaming(false);
       setStreamingExplanation(null);
@@ -305,6 +313,18 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
               </div>
             </div>
           ))}
+
+          {/* Error bubble */}
+          {streamError && !isStreaming && (
+            <div className="flex gap-2.5 flex-row">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-destructive/10 border border-destructive/30 text-destructive">
+                <Bot className="w-3 h-3" />
+              </div>
+              <div className="max-w-[84%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed bg-destructive/10 text-destructive border border-destructive/30 rounded-tl-sm">
+                {streamError}
+              </div>
+            </div>
+          )}
 
           {/* Streaming bubble */}
           {isStreaming && (
