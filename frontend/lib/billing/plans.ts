@@ -1,9 +1,23 @@
+// ===============================
+// MEMBERSHIP PLANS (PAID + FREE)
+// ===============================
+
 export const MEMBERSHIP_PLANS = [
+  {
+    id: "free_tier",
+    name: "Free Tier",
+    price: 0,
+    interval: "one_time",
+    credits: 10, // one-time only
+    priceId: null, // no Stripe checkout for free tier
+    isFree: true,
+  },
   {
     id: "creator_monthly",
     name: "Creator Monthly",
     price: 12.99,
     interval: "month",
+    credits: 100,
     priceId: process.env.STRIPE_PRICE_CREATOR_MONTHLY!,
   },
   {
@@ -11,6 +25,7 @@ export const MEMBERSHIP_PLANS = [
     name: "Creator Yearly",
     price: 129,
     interval: "year",
+    credits: 1440, // 12 months + 20%
     priceId: process.env.STRIPE_PRICE_CREATOR_YEARLY!,
   },
   {
@@ -18,6 +33,7 @@ export const MEMBERSHIP_PLANS = [
     name: "Studio Monthly",
     price: 29.99,
     interval: "month",
+    credits: 500, // UPDATED
     priceId: process.env.STRIPE_PRICE_STUDIO_MONTHLY!,
   },
   {
@@ -25,9 +41,14 @@ export const MEMBERSHIP_PLANS = [
     name: "Studio Yearly",
     price: 299,
     interval: "year",
+    credits: 7200, // 12 months + 20%
     priceId: process.env.STRIPE_PRICE_STUDIO_YEARLY!,
   },
 ];
+
+// ===============================
+// CREDIT BUNDLES
+// ===============================
 
 export const CREDIT_BUNDLES = [
   {
@@ -49,3 +70,46 @@ export const CREDIT_BUNDLES = [
     priceId: process.env.STRIPE_PRICE_CREDITS_300!,
   },
 ];
+
+// ===============================
+// CREDIT GRANTING LOGIC
+// ===============================
+
+export function getCreditsForPriceId(priceId: string | null) {
+  if (!priceId) return 0;
+
+  switch (priceId) {
+    case process.env.STRIPE_PRICE_CREATOR_MONTHLY:
+      return 100;
+
+    case process.env.STRIPE_PRICE_CREATOR_YEARLY:
+      return 1440;
+
+    case process.env.STRIPE_PRICE_STUDIO_MONTHLY:
+      return 500; // UPDATED
+
+    case process.env.STRIPE_PRICE_STUDIO_YEARLY:
+      return 7200;
+
+    case process.env.STRIPE_PRICE_CREDITS_100:
+      return 100;
+
+    case process.env.STRIPE_PRICE_CREDITS_200:
+      return 200;
+
+    case process.env.STRIPE_PRICE_CREDITS_300:
+      return 300;
+
+    default:
+      return 0;
+  }
+}
+
+// ===============================
+// FREE TIER LOGIC
+// ===============================
+
+export function getFreeTierCredits(userHasClaimedFreeTier: boolean) {
+  if (userHasClaimedFreeTier) return 0;
+  return 10; // one-time only
+}
