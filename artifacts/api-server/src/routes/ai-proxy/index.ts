@@ -1,18 +1,35 @@
 import { Router, type IRouter } from "express";
 import { db, projectsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { getAuth } from "@clerk/express";
 
 const router: IRouter = Router();
 
+async function resolveProject(projectId: number) {
+  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
+  return project ?? null;
+}
+
 router.post("/ai-proxy/:projectId/openai", async (req, res): Promise<void> => {
+  const auth = getAuth(req);
+  if (!auth?.userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const projectId = parseInt(req.params.projectId, 10);
   if (isNaN(projectId)) {
     res.status(400).json({ error: "Invalid project ID" });
     return;
   }
 
-  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
-  const apiKey = project?.openaiApiKey ?? process.env.OPENAI_API_KEY;
+  const project = await resolveProject(projectId);
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const apiKey = project.openaiApiKey ?? process.env.OPENAI_API_KEY;
   if (!apiKey) {
     res.status(403).json({ error: "No OpenAI API key configured for this project" });
     return;
@@ -54,14 +71,25 @@ router.post("/ai-proxy/:projectId/openai", async (req, res): Promise<void> => {
 });
 
 router.post("/ai-proxy/:projectId/gemini", async (req, res): Promise<void> => {
+  const auth = getAuth(req);
+  if (!auth?.userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const projectId = parseInt(req.params.projectId, 10);
   if (isNaN(projectId)) {
     res.status(400).json({ error: "Invalid project ID" });
     return;
   }
 
-  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
-  const apiKey = project?.geminiApiKey ?? process.env.GEMINI_API_KEY;
+  const project = await resolveProject(projectId);
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const apiKey = project.geminiApiKey ?? process.env.GEMINI_API_KEY;
   if (!apiKey) {
     res.status(403).json({ error: "No Gemini API key configured for this project" });
     return;
