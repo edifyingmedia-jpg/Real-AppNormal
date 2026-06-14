@@ -14,7 +14,35 @@ tags:
     description: Project management
   - name: anthropic
     description: Anthropic AI chat operations
+  - name: utils
+    description: Utility operations
 paths:
+  /scrape:
+    get:
+      operationId: scrapeUrl
+      tags: [utils]
+      summary: Scrape a URL for site cloning
+      description: Fetches and returns cleaned HTML from a URL server-side, bypassing CORS
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Scraped HTML content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScrapeResult"
+        "400":
+          description: Invalid URL or fetch error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicError"
+
   /healthz:
     get:
       operationId: healthCheck
@@ -729,6 +757,26 @@ components:
         - creditLimit
         - createdAt
         - messages
+
+    ScrapeResult:
+      type: object
+      properties:
+        url:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        html:
+          type: string
+        truncated:
+          type: boolean
+      required:
+        - url
+        - title
+        - description
+        - html
+        - truncated
 
     AnthropicError:
       type: object

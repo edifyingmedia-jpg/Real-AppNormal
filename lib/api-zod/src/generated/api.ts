@@ -9,6 +9,23 @@ import * as zod from 'zod';
 
 
 /**
+ * Fetches and returns cleaned HTML from a URL server-side, bypassing CORS
+ * @summary Scrape a URL for site cloning
+ */
+export const ScrapeUrlQueryParams = zod.object({
+  "url": zod.coerce.string()
+})
+
+export const ScrapeUrlResponse = zod.object({
+  "url": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "html": zod.string(),
+  "truncated": zod.boolean()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

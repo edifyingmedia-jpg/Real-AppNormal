@@ -37,7 +37,9 @@ import type {
   ProjectSettingsInput,
   ProjectUpdate,
   ProjectWithFiles,
-  PublishProjectInput
+  PublishProjectInput,
+  ScrapeResult,
+  ScrapeUrlParams
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -49,6 +51,91 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+
+
+export const getScrapeUrlUrl = (params: ScrapeUrlParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/scrape?${stringifiedParams}` : `/api/scrape`
+}
+
+/**
+ * Fetches and returns cleaned HTML from a URL server-side, bypassing CORS
+ * @summary Scrape a URL for site cloning
+ */
+export const scrapeUrl = async (params: ScrapeUrlParams, options?: RequestInit): Promise<ScrapeResult> => {
+
+  return customFetch<ScrapeResult>(getScrapeUrlUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getScrapeUrlQueryKey = (params?: ScrapeUrlParams,) => {
+    return [
+    `/api/scrape`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getScrapeUrlQueryOptions = <TData = Awaited<ReturnType<typeof scrapeUrl>>, TError = ErrorType<AnthropicError>>(params: ScrapeUrlParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof scrapeUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getScrapeUrlQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof scrapeUrl>>> = ({ signal }) => scrapeUrl(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof scrapeUrl>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ScrapeUrlQueryResult = NonNullable<Awaited<ReturnType<typeof scrapeUrl>>>
+export type ScrapeUrlQueryError = ErrorType<AnthropicError>
+
+
+/**
+ * @summary Scrape a URL for site cloning
+ */
+
+export function useScrapeUrl<TData = Awaited<ReturnType<typeof scrapeUrl>>, TError = ErrorType<AnthropicError>>(
+ params: ScrapeUrlParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof scrapeUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getScrapeUrlQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 

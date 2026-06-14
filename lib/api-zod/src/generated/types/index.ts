@@ -24,3 +24,5 @@ export * from './projectSettingsInput';
 export * from './projectUpdate';
 export * from './projectWithFiles';
 export * from './publishProjectInput';
+export * from './scrapeResult';
+export * from './scrapeUrlParams';

@@ -147,7 +147,19 @@ export interface AnthropicConversationWithMessages {
   messages: AnthropicMessage[];
 }
 
+export interface ScrapeResult {
+  url: string;
+  title: string;
+  description: string;
+  html: string;
+  truncated: boolean;
+}
+
 export interface AnthropicError {
   error: string;
 }
+
+export type ScrapeUrlParams = {
+url: string;
+};
 

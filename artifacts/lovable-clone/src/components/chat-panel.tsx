@@ -10,7 +10,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Loader2, Sparkles, Zap, AlertTriangle, ArrowUp } from "lucide-react";
+import { Send, Bot, User, Loader2, Sparkles, Zap, AlertTriangle, ArrowUp, Link2, X } from "lucide-react";
 
 interface ParsedFile {
   filename: string;
@@ -153,6 +153,10 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
   const [streamWarning, setStreamWarning] = useState<string | null>(null);
   const [credits, setCredits] = useState<CreditInfo | null>(null);
   const [showUpgradeBanner, setShowUpgradeBanner] = useState(false);
+  const [cloneMode, setCloneMode] = useState(false);
+  const [cloneUrl, setCloneUrl] = useState("");
+  const [isScraping, setIsScraping] = useState(false);
+  const [scrapeError, setScrapeError] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
@@ -216,12 +220,34 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
 
   const isCreditsExhausted = credits !== null && credits.remaining <= 0;
 
-  const sendMessage = async () => {
-    const trimmed = input.trim();
+  const handleClone = async () => {
+    const url = cloneUrl.trim();
+    if (!url || isScraping || isStreaming) return;
+    setIsScraping(true);
+    setScrapeError(null);
+    try {
+      const res = await fetch(`/api/scrape?url=${encodeURIComponent(url)}`);
+      const data = await res.json() as { url: string; title: string; description: string; html: string; truncated: boolean; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Failed to scrape URL");
+      const message = `Clone this website faithfully — reproduce the exact layout, colors, typography, and all sections.\nURL: ${data.url}\nTitle: ${data.title}${data.description ? `\nDescription: ${data.description}` : ""}\n\nHTML source:\n${data.html}${data.truncated ? "\n\n[Note: HTML was truncated at 80kb]" : ""}`;
+      setCloneMode(false);
+      setCloneUrl("");
+      await sendMessage(message);
+    } catch (err) {
+      setScrapeError(err instanceof Error ? err.message : "Failed to fetch URL");
+    } finally {
+      setIsScraping(false);
+    }
+  };
+
+  const sendMessage = async (overrideContent?: string) => {
+    const trimmed = (overrideContent ?? input).trim();
     if (!trimmed || isStreaming || isCreditsExhausted) return;
 
-    setInput("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    if (!overrideContent) {
+      setInput("");
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
+    }
     setIsStreaming(true);
     setStreamingExplanation(null);
     setStreamingPhase("thinking");
@@ -490,6 +516,44 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
           </div>
         ) : (
           <>
+            {/* Clone URL row */}
+            {cloneMode && (
+              <div className="mb-2">
+                <div className="flex gap-1.5">
+                  <input
+                    type="url"
+                    value={cloneUrl}
+                    onChange={(e) => { setCloneUrl(e.target.value); setScrapeError(null); }}
+                    onKeyDown={(e) => e.key === "Enter" && handleClone()}
+                    placeholder="https://example.com"
+                    autoFocus
+                    disabled={isScraping || isStreaming}
+                    className="flex-1 bg-secondary/40 rounded-lg border border-border/60 px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/50 transition-colors disabled:opacity-50"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleClone}
+                    disabled={!cloneUrl.trim() || isScraping || isStreaming}
+                    className="h-7 text-xs gap-1 shrink-0"
+                  >
+                    {isScraping ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link2 className="w-3 h-3" />}
+                    {isScraping ? "Fetching…" : "Clone"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => { setCloneMode(false); setCloneUrl(""); setScrapeError(null); }}
+                    className="h-7 w-7 p-0 shrink-0"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+                {scrapeError && (
+                  <p className="text-[11px] text-destructive mt-1 px-1">{scrapeError}</p>
+                )}
+              </div>
+            )}
+
             <div className="flex gap-2 items-end bg-secondary/40 rounded-xl border border-border/60 px-3 py-2 focus-within:border-primary/50 transition-colors">
               <textarea
                 ref={textareaRef}
@@ -510,16 +574,26 @@ export function ChatPanel({ projectId, conversationId }: ChatPanelProps) {
               <Button
                 size="sm"
                 data-testid="btn-send-message"
-                onClick={sendMessage}
+                onClick={() => sendMessage()}
                 disabled={!input.trim() || isStreaming}
                 className="h-7 w-7 p-0 shrink-0 rounded-lg"
               >
                 {isStreaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               </Button>
             </div>
-            <p className="text-[11px] text-muted-foreground/60 mt-1.5 px-1">
-              Enter to send · Shift+Enter for new line
-            </p>
+            <div className="flex items-center justify-between mt-1.5 px-1">
+              <p className="text-[11px] text-muted-foreground/60">Enter to send · Shift+Enter for new line</p>
+              {!cloneMode && (
+                <button
+                  onClick={() => { setCloneMode(true); setScrapeError(null); }}
+                  disabled={isStreaming}
+                  className="text-[11px] text-muted-foreground/50 hover:text-primary flex items-center gap-0.5 transition-colors disabled:pointer-events-none"
+                >
+                  <Link2 className="w-2.5 h-2.5" />
+                  Clone a site
+                </button>
+              )}
+            </div>
           </>
         )}
       </div>
