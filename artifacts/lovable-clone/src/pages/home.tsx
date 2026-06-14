@@ -105,7 +105,7 @@ export default function Home() {
           </h1>
 
           <p className="text-lg text-slate-400 mb-8 max-w-xl">
-            Describe an app and watch it come to life in seconds. No coding required, just your imagination.
+            Describe what you want to build. AppNormal writes the code and wires it together. No coding required.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">

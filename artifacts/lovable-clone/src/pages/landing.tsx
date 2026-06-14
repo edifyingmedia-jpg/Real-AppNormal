@@ -77,7 +77,7 @@ const FEATURES = [
   {
     icon: <Globe className="w-5 h-5" />,
     title: "Publish Instantly",
-    desc: "One-click deployment to a public URL. Share your app with the world in seconds.",
+    desc: "One-click deployment to a public URL. Share your app with anyone, anywhere.",
   },
   {
     icon: <Github className="w-5 h-5" />,
@@ -207,11 +207,11 @@ export default function Landing() {
         </div>
 
         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 max-w-4xl text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-400">
-          Build full-stack apps with a single prompt
+          Build full-stack apps with AI
         </h1>
 
         <p className="text-xl text-slate-400 mb-10 max-w-2xl leading-relaxed">
-          Describe what you want. AppNormal writes the code, wires the backend, and ships it live — in seconds.
+          Describe what you want to build. AppNormal writes the code, wires the backend, and helps you ship it live.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-4">
