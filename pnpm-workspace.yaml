@@ -45,4 +45,4 @@ onlyBuiltDependencies:
 
 overrides:
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
-  # (all your override entries remain unchanged)
+  # (rest unchanged)
