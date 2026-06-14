@@ -1,11 +1,13 @@
 import { useListProjects } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Plus, TerminalSquare, Sparkles, ArrowRight } from "lucide-react";
+import { Plus, TerminalSquare, Sparkles, ArrowRight, Zap, LogOut, Crown } from "lucide-react";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { NewProjectDialog } from "@/components/new-project-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { useClerk } from "@clerk/react";
 
 const ACCENT_COLORS = [
   "border-t-blue-500",
@@ -24,8 +26,16 @@ const INSPIRATION_PROMPTS = [
   { label: "Kanban board", name: "Kanban Board", description: "A drag-and-drop project board with columns" },
 ];
 
+const TIER_LABELS: Record<string, { label: string; color: string }> = {
+  free: { label: "Free", color: "text-slate-400 bg-slate-800" },
+  creator: { label: "Creator", color: "text-blue-300 bg-blue-500/15 border border-blue-500/30" },
+  studio: { label: "Studio", color: "text-purple-300 bg-purple-500/15 border border-purple-500/30" },
+};
+
 export default function Home() {
   const { data: projects, isLoading } = useListProjects();
+  const { data: currentUser } = useCurrentUser();
+  const { signOut } = useClerk();
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
   const [prefill, setPrefill] = useState<{ name: string; description: string }>({ name: "", description: "" });
   const [, setLocation] = useLocation();
@@ -56,6 +66,31 @@ export default function Home() {
         <div className="absolute top-6 left-6 lg:left-12 flex items-center gap-2 text-slate-400">
           <TerminalSquare className="w-5 h-5" />
           <span className="text-sm font-medium tracking-tight">AppNormal</span>
+        </div>
+
+        {/* Top-right user info */}
+        <div className="absolute top-6 right-6 lg:right-12 flex items-center gap-2">
+          {currentUser && (
+            <>
+              {currentUser.tier !== "free" && (
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${TIER_LABELS[currentUser.tier]?.color}`}>
+                  <Crown className="w-3 h-3" />
+                  {TIER_LABELS[currentUser.tier]?.label}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800/80 text-xs font-medium text-slate-300 border border-slate-700/50">
+                <Zap className="w-3 h-3 text-amber-400" />
+                {currentUser.creditsRemaining} credits
+              </span>
+            </>
+          )}
+          <button
+            onClick={() => signOut({ redirectUrl: "/" })}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors"
+            title="Sign out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Hero Content */}

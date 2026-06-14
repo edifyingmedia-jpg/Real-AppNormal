@@ -1,0 +1,1 @@
+- [AppNormal membership system](appnormal-membership.md) — Clerk+Stripe+DB tier system: Free/Creator/Studio; credit deduction pattern; feature gating approach.

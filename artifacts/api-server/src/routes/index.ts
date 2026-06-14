@@ -4,6 +4,8 @@ import projectsRouter from "./projects";
 import anthropicRouter from "./anthropic";
 import publishedRouter from "./published";
 import scrapeRouter from "./scrape";
+import stripeRouter from "./stripe";
+import usersRouter from "./users";
 
 const router: IRouter = Router();
 
@@ -12,5 +14,7 @@ router.use(projectsRouter);
 router.use(anthropicRouter);
 router.use(publishedRouter);
 router.use(scrapeRouter);
+router.use(stripeRouter);
+router.use(usersRouter);
 
 export default router;

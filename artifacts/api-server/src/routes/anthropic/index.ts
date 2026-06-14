@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
-import { db, conversations as conversationsTable, messages as messagesTable, projectsTable, projectFilesTable } from "@workspace/db";
+import { db, conversations as conversationsTable, messages as messagesTable, projectsTable, projectFilesTable, usersTable } from "@workspace/db";
+import { getAuth } from "@clerk/express";
 import {
   CreateAnthropicConversationBody,
   GetAnthropicConversationParams,
@@ -105,6 +106,27 @@ router.post("/anthropic/conversations/:id/messages", async (req, res): Promise<v
 
   const conversationId = params.data.id;
   const userContent = parsed.data.content;
+
+  // User-level credit check (takes priority over conversation-level)
+  const auth = getAuth(req);
+  const userId = auth?.userId ?? null;
+  let userCreditsRemaining: number | null = null;
+
+  if (userId) {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    if (user) {
+      userCreditsRemaining = user.creditsRemaining;
+      if (user.creditsRemaining <= 0) {
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        res.write(`data: ${JSON.stringify({ error: "CREDITS_EXHAUSTED", message: "You've used all your credits. Upgrade your plan or purchase a credit bundle to keep building.", tier: user.tier })}\n\n`);
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+        return;
+      }
+    }
+  }
 
   const [conversation] = await db
     .select()
@@ -275,7 +297,7 @@ NOTE: Actual payment requires a backend for PaymentIntents. Show the UI with a n
   const stream = anthropic.messages.stream({
     model: "claude-opus-4-5",
     max_tokens: 32000,
-    system: buildSystemPrompt(isFirstBuild, integrationContext),
+    system: buildSystemPrompt(isFirstBuild, integrationContext, userCreditsRemaining),
     messages: chatMessages,
   });
 
@@ -305,6 +327,18 @@ NOTE: Actual payment requires a backend for PaymentIntents. Show the UI with a n
     .update(conversationsTable)
     .set({ tokensUsed: sql`${conversationsTable.tokensUsed} + ${messageTokens}` })
     .where(eq(conversationsTable.id, conversationId));
+
+  // Deduct user-level credits (1 credit = 50,000 tokens)
+  if (userId && messageTokens > 0) {
+    const creditsToDeduct = Math.max(1, Math.ceil(messageTokens / 50_000));
+    await db
+      .update(usersTable)
+      .set({ creditsRemaining: sql`GREATEST(0, ${usersTable.creditsRemaining} - ${creditsToDeduct})` })
+      .where(eq(usersTable.id, userId));
+    if (userCreditsRemaining !== null) {
+      userCreditsRemaining = Math.max(0, userCreditsRemaining - creditsToDeduct);
+    }
+  }
 
   const newTokensUsed = tokensUsed + messageTokens;
   const newRemaining = Math.max(0, creditLimit - newTokensUsed);
@@ -336,7 +370,7 @@ NOTE: Actual payment requires a backend for PaymentIntents. Show the UI with a n
   res.end();
 });
 
-function buildSystemPrompt(isFirstBuild: boolean, integrationContext: string): string {
+function buildSystemPrompt(isFirstBuild: boolean, integrationContext: string, userCreditsRemaining: number | null = null): string {
   const editingGuidance = isFirstBuild
     ? `You are creating a brand new app. Build it complete and fully functional from the ground up — not a skeleton, the real thing.`
     : `You are EDITING an existing app. The user's current files are in the message under [CURRENT PROJECT FILES].
@@ -346,8 +380,12 @@ function buildSystemPrompt(isFirstBuild: boolean, integrationContext: string): s
 - For small changes (bug fix, color tweak): only return changed files
 - For structural changes (new feature, redesign): return all files`;
 
-  return `You are AppNormal — an elite full-stack engineer and product designer. You produce complete, sophisticated, production-quality web applications that rival what senior teams ship. You don't make demos — you make real software.
+  const creditContext = userCreditsRemaining !== null
+    ? `\nUSER CREDITS: ${userCreditsRemaining} credits remaining (1 credit ≈ 50,000 tokens). Generate complete, working code efficiently.\n`
+    : "";
 
+  return `You are AppNormal — an elite full-stack engineer and product designer. You produce complete, sophisticated, production-quality web applications that rival what senior teams ship. You don't make demos — you make real software.
+${creditContext}
 ${editingGuidance}
 
 OUTPUT FORMAT — CRITICAL:

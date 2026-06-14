@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 40" fill="none">
+  <rect x="0" y="4" width="32" height="32" rx="7" fill="#3B82F6"/>
+  <rect x="5" y="9" width="22" height="22" rx="4" fill="#1D4ED8"/>
+  <path d="M10 21h12M13 17l-4 4 4 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="40" y="27" font-family="system-ui,-apple-system,sans-serif" font-size="17" font-weight="700" fill="white" letter-spacing="-0.5">AppNormal</text>
+</svg>

@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Globe, Copy, Check, ExternalLink, Lock, Loader2 } from "lucide-react";
+import { Globe, Copy, Check, ExternalLink, Lock, Loader2, Crown, Zap } from "lucide-react";
 
 interface PublishDialogProps {
   open: boolean;
@@ -27,17 +27,32 @@ export function PublishDialog({
   hasFiles,
 }: PublishDialogProps) {
   const [copied, setCopied] = useState(false);
+  const [upgradeRequired, setUpgradeRequired] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const publishMutation = usePublishProject();
 
   const publishedUrl = `${window.location.origin}/api/published/${projectId}`;
 
   const handlePublish = async () => {
-    await publishMutation.mutateAsync({
-      id: projectId,
-      data: { isPublished: !isPublished },
-    });
-    queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    setPublishError(null);
+    setUpgradeRequired(false);
+    try {
+      await publishMutation.mutateAsync({
+        id: projectId,
+        data: { isPublished: !isPublished },
+      });
+      queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+    } catch (err: unknown) {
+      const apiErr = (err as { response?: { data?: { error?: string; message?: string }; status?: number } });
+      const status = apiErr?.response?.status;
+      const msg = apiErr?.response?.data?.message ?? apiErr?.response?.data?.error;
+      if (status === 403) {
+        setUpgradeRequired(true);
+      } else {
+        setPublishError(msg ?? "Failed to publish. Please try again.");
+      }
+    }
   };
 
   const handleCopy = async () => {
@@ -60,13 +75,39 @@ export function PublishDialog({
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
-          {!hasFiles && (
+          {upgradeRequired && (
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-4 py-4 space-y-3">
+              <div className="flex items-center gap-2 text-amber-400">
+                <Crown className="w-4 h-4 shrink-0" />
+                <span className="text-sm font-semibold">Creator or Studio plan required</span>
+              </div>
+              <p className="text-xs text-amber-300/80 leading-relaxed">
+                Publishing apps is a paid feature. Upgrade to share your work with the world.
+              </p>
+              <Button
+                size="sm"
+                className="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold gap-1.5"
+                onClick={() => window.location.href = "/#pricing"}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                View Plans
+              </Button>
+            </div>
+          )}
+
+          {publishError && (
+            <div className="rounded-lg bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive">
+              {publishError}
+            </div>
+          )}
+
+          {!hasFiles && !upgradeRequired && (
             <div className="rounded-lg bg-muted/50 border border-border px-4 py-3 text-sm text-muted-foreground">
               Generate your app first by chatting with the AI, then publish it here.
             </div>
           )}
 
-          {hasFiles && (
+          {hasFiles && !upgradeRequired && (
             <>
               <div className="flex items-center gap-2 rounded-lg bg-muted/40 border border-border p-3">
                 <div className={`w-2 h-2 rounded-full shrink-0 ${isPublished ? "bg-green-500" : "bg-muted-foreground/40"}`} />
@@ -109,7 +150,7 @@ export function PublishDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close
             </Button>
-            {hasFiles && (
+            {hasFiles && !upgradeRequired && (
               <Button
                 onClick={handlePublish}
                 disabled={publishMutation.isPending}

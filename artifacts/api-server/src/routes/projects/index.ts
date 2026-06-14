@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, projectsTable, projectFilesTable } from "@workspace/db";
+import { requiresPaidTier } from "../../middlewares/requiresPaidTier";
 import {
   CreateProjectBody,
   GetProjectParams,
@@ -151,7 +152,7 @@ router.delete("/projects/:id/files/:fileId", async (req, res): Promise<void> => 
   res.sendStatus(204);
 });
 
-router.post("/projects/:id/publish", async (req, res): Promise<void> => {
+router.post("/projects/:id/publish", requiresPaidTier, async (req, res): Promise<void> => {
   const params = PublishProjectParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -197,7 +198,7 @@ router.patch("/projects/:id/settings", async (req, res): Promise<void> => {
   res.json(project);
 });
 
-router.post("/projects/:id/github/push", async (req, res): Promise<void> => {
+router.post("/projects/:id/github/push", requiresPaidTier, async (req, res): Promise<void> => {
   const params = PushProjectToGithubParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
