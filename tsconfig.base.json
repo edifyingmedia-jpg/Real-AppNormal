@@ -23,7 +23,6 @@
     "types": [],
     "customConditions": ["workspace"],
 
-    /* ⭐ ADD THESE TWO LINES ⭐ */
     "baseUrl": "frontend",
     "paths": {
       "@/*": ["*"]
