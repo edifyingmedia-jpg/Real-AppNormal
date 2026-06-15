@@ -2,7 +2,14 @@
 
 export * from "./types";
 export * from "./plans";          // priceId → credits mapping lives here
-export * from "./credits";        // credit math only (no plan mapping)
+
+// Export everything from credits EXCEPT getCreditsForPriceId
+export { 
+  // Add other exports from credits.ts here, for example:
+  calculateCreditUsage, 
+  validateCredits 
+} from "./credits";
+
 export * from "./creditLedger";
 export * from "./saveLedger";
 export * from "./storage";
