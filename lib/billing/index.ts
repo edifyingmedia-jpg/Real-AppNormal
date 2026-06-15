@@ -1,14 +1,13 @@
 export * from "./types";
 export * from "./plans";
 
-// Export everything from credits.ts EXCEPT getCreditsForPriceId
-// This uses a destructuring pattern to pick all other exports
+// Explicitly export only the members you need from credits.ts
+// DO NOT include 'getCreditsForPriceId' in this list.
 export { 
-  // List other specific functions exported from credits.ts here
+  // Add all other exported functions/variables from credits.ts here
   // For example:
-  // calculateCredits, 
-  // checkCreditEligibility 
-  // Add all exports from credits.ts that ARE NOT getCreditsForPriceId
+  // calculateCreditBalance,
+  // ... 
 } from "./credits";
 
 export * from "./creditLedger";
