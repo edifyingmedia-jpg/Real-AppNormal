@@ -4,7 +4,14 @@
     "baseUrl": "frontend",
     "paths": {
       "@/*": ["*"]
-    }
+    },
+
+    // ⭐ REQUIRED FOR JSX / React components
+    "jsx": "react-jsx",
+    "types": ["react", "react-dom"],
+    "lib": ["dom", "esnext"],
+
+    "esModuleInterop": true
   },
   "compileOnSave": false,
   "files": [],
