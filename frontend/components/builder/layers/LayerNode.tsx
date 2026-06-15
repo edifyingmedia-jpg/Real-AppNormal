@@ -1,5 +1,3 @@
-// frontend/components/builder/layers/LayerNode.tsx
-
 "use client";
 
 import { BuilderNode, useBuilderState } from "../state/BuilderState";
@@ -28,7 +26,8 @@ export default function LayerNode({
         <span className="text-sm">{node.type}</span>
       </div>
 
-      {node.children?.length > 0 && (
+      {/* FIX: Ensure node.children exists before accessing length or mapping */}
+      {node.children && node.children.length > 0 && (
         <div className="ml-2">
           {node.children.map((child) => (
             <LayerNode key={child.id} node={child} depth={depth + 1} />
