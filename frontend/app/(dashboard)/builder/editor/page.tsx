@@ -3,7 +3,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import EditorShell from "@/frontend/components/builder/EditorShell";
+import EditorShell from "@/components/builder/EditorShell";
 
 export default function BuilderEditorPage() {
   const params = useSearchParams();
