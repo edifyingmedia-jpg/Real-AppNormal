@@ -1,8 +1,14 @@
-// frontend/components/builder/inspector/InspectorPanel.tsx
-
 "use client";
 
 import { useBuilderState } from "../state/BuilderState";
+
+// Define a basic interface for Node to satisfy TypeScript
+interface Node {
+  id: string;
+  type: string;
+  props: Record<string, any>;
+  children?: Node[];
+}
 
 export default function InspectorPanel() {
   const { selectedNodeId, tree, setTree, history, setHistory } = useBuilderState();
@@ -15,7 +21,7 @@ export default function InspectorPanel() {
     // Save history for undo
     setHistory([...history, tree]);
 
-    const updated = updateNode(tree, selectedNodeId, (node) => ({
+    const updated = updateNode(tree, selectedNodeId, (node: Node) => ({
       ...node,
       props: { ...node.props, [key]: value },
     }));
@@ -61,7 +67,7 @@ export default function InspectorPanel() {
    Helpers
 ------------------------------ */
 
-function findNode(nodes, id) {
+function findNode(nodes: Node[], id: string): Node | null {
   if (!id) return null;
   for (const node of nodes) {
     if (node.id === id) return node;
@@ -73,7 +79,7 @@ function findNode(nodes, id) {
   return null;
 }
 
-function updateNode(nodes, id, updater) {
+function updateNode(nodes: Node[], id: string, updater: (node: Node) => Node): Node[] {
   return nodes.map((node) => {
     if (node.id === id) {
       return updater(node);
