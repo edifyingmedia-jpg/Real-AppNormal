@@ -21,6 +21,12 @@
     "skipLibCheck": true,
     "target": "es2022",
     "types": [],
-    "customConditions": ["workspace"]
+    "customConditions": ["workspace"],
+
+    /* ⭐ ADD THESE TWO LINES ⭐ */
+    "baseUrl": "frontend",
+    "paths": {
+      "@/*": ["*"]
+    }
   }
 }
