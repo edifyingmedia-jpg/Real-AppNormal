@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCredits } from "@/frontend/lib/billing/useCredits";
+import { useCredits } from "@/lib/billing/useCredits";
 import Link from "next/link";
 
 export default function BillingCreditsPage() {
