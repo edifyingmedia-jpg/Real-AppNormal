@@ -10,14 +10,11 @@ export default function DeleteButton() {
   const handleDelete = () => {
     if (!selectedNodeId) return;
 
-    // Get the updated history stack
-    const updatedHistory = pushHistory(history, tree);
+    // Pass the existing history stack (BuilderNode[][]) and the current tree (BuilderNode[])
+    // pushHistory should return the updated stack: BuilderNode[][]
+    const newHistory = pushHistory(history, tree);
 
-    // FIX: Map the HistoryEntry objects to their inner tree structure 
-    // to match the BuilderNode[][] type expected by setHistory.
-    // Replace '.tree' with the actual property name if it differs (e.g., .nodes)
-    setHistory(updatedHistory.map(entry => entry.tree));
-
+    setHistory(newHistory);
     setTree(deleteNode(tree, selectedNodeId));
   };
 
