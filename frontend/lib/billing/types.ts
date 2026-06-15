@@ -1,5 +1,9 @@
 // frontend/lib/billing/types.ts
 
+// ===============================
+// CREDIT TRANSACTIONS
+// ===============================
+
 export interface CreditTransaction {
   id: string;
   type: "add" | "use";
@@ -8,11 +12,15 @@ export interface CreditTransaction {
   reason?: string;
 }
 
+// ===============================
+// LEDGER (USER CREDIT HISTORY)
+// ===============================
+
 export interface Ledger {
   userId: string;
 
   // Membership
-  membershipPlan: string | null; // creator_monthly, studio_monthly, etc.
+  membershipPlan: string | null; // creator, studio, free_tier, etc.
   stripeCustomerId: string | null;
 
   // Credits
@@ -28,13 +36,26 @@ export interface Ledger {
   updatedAt: number;
 }
 
+// ===============================
+// MEMBERSHIP PLAN (MATCHES PLANS IN plans.ts)
+// ===============================
+
 export interface MembershipPlan {
   id: string;
   name: string;
-  priceId: string; // Stripe price ID
-  credits: number;
-  interval: "month" | "year";
+  description: string;          // ⭐ REQUIRED BY billing/upgrade/page.tsx
+  monthlyPriceCents: number;
+  yearlyPriceCents: number;
+  monthlyCredits: number;
+  yearlyCredits: number;
+  priceIdMonthly: string | null;
+  priceIdYearly: string | null;
+  isFree?: boolean;
 }
+
+// ===============================
+// FREE TIER STATE
+// ===============================
 
 export interface FreeTierState {
   claimed: boolean;
