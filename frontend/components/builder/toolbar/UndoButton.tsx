@@ -1,17 +1,23 @@
-// frontend/components/builder/toolbar/UndoButton.tsx
-
 "use client";
 
 import { useBuilderState } from "../state/BuilderState";
-import { undo } from "../history/undo";
+import { undo } from "../history/undo"; // Assuming this is your undo command
 
 export default function UndoButton() {
-  const { tree, setTree, history, setHistory } = useBuilderState();
+  const { history, setHistory, tree, setTree } = useBuilderState();
 
   const handleUndo = () => {
-    const result = undo(history, tree);
+    // 1. Transform your BuilderNode[][] history into the HistoryEntry[] format
+    const historyAsEntries = history.map((nodes) => ({ tree: nodes }));
+
+    // 2. Perform the undo
+    const result = undo(historyAsEntries, tree);
+
+    // 3. Update state
     setTree(result.tree);
-    setHistory(result.history);
+    
+    // 4. Map back to BuilderNode[][] to satisfy setHistory type requirements
+    setHistory(result.history.map((entry) => entry.tree));
   };
 
   return (
