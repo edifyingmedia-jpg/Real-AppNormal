@@ -1,26 +1,27 @@
 // frontend/app/api/webhook/route.ts
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getCreditsForPriceId } from "@/lib/billing/credits";
+
+// Required for Stripe webhooks in Next.js App Router
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2023-10-16",
 });
 
-// Stripe requires the raw body for signature verification
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  // Stripe requires the raw text body
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
 
   if (!sig) {
-    return NextResponse.json({ error: "Missing Stripe signature" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing Stripe signature" },
+      { status: 400 }
+    );
   }
 
   let event: Stripe.Event;
