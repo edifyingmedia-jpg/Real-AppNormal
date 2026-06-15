@@ -5,9 +5,13 @@
 import { useEffect, useState, useCallback } from "react";
 
 interface CreditState {
-  remaining: number;
-  total: number;
-  used: number;
+  credits: number;
+  monthlyCredits: number;
+  ledger: Array<{
+    amount: number;
+    reason: string;
+    date: string;
+  }>;
   membershipPlan: string | null;
   freeTierClaimed: boolean;
   loading: boolean;
@@ -19,13 +23,16 @@ interface CreditState {
 // =====================================
 
 async function fetchCredits(): Promise<{
-  remaining: number;
-  total: number;
-  used: number;
+  credits: number;
+  monthlyCredits: number;
+  ledger: Array<{
+    amount: number;
+    reason: string;
+    date: string;
+  }>;
   membershipPlan: string | null;
   freeTierClaimed: boolean;
 }> {
-  // TODO: Replace with your real API endpoint
   const res = await fetch("/api/credits");
   if (!res.ok) throw new Error("Failed to load credits");
   return res.json();
@@ -36,9 +43,11 @@ async function fetchCredits(): Promise<{
 // =====================================
 
 export function useCredits(): CreditState {
-  const [remaining, setRemaining] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [used, setUsed] = useState(0);
+  const [credits, setCredits] = useState(0);
+  const [monthlyCredits, setMonthlyCredits] = useState(0);
+  const [ledger, setLedger] = useState<
+    Array<{ amount: number; reason: string; date: string }>
+  >([]);
   const [membershipPlan, setMembershipPlan] = useState<string | null>(null);
   const [freeTierClaimed, setFreeTierClaimed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -48,9 +57,9 @@ export function useCredits(): CreditState {
       setLoading(true);
       const data = await fetchCredits();
 
-      setRemaining(data.remaining);
-      setTotal(data.total);
-      setUsed(data.used);
+      setCredits(data.credits);
+      setMonthlyCredits(data.monthlyCredits);
+      setLedger(data.ledger);
       setMembershipPlan(data.membershipPlan);
       setFreeTierClaimed(data.freeTierClaimed);
     } catch (err) {
@@ -65,9 +74,9 @@ export function useCredits(): CreditState {
   }, [load]);
 
   return {
-    remaining,
-    total,
-    used,
+    credits,
+    monthlyCredits,
+    ledger,
     membershipPlan,
     freeTierClaimed,
     loading,
