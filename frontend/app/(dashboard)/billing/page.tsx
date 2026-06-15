@@ -2,8 +2,8 @@
 
 "use client";
 
-import { PLANS } from "@/frontend/lib/billing/plans";
-import { displayMonthlyPrice, displayYearlyPrice } from "@/frontend/lib/billing/utils";
+import { PLANS } from "@/lib/billing/plans";
+import { displayMonthlyPrice, displayYearlyPrice } from "@/lib/billing/utils";
 import Link from "next/link";
 
 export default function BillingPage() {
