@@ -1,11 +1,11 @@
 export * from "./types";
 export * from "./plans";
 
-// Remove the line 'export * from "./credits"' entirely.
-// Only keep the named exports below:
+// Export only what you need from credits.ts, but NOT getCreditsForPriceId
 export { 
-  // List only the functions you need from credits.ts here
-  // DO NOT include getCreditsForPriceId
+  // List other functions from credits.ts here, for example:
+  // calculateCreditUsage, 
+  // validateCredits 
 } from "./credits";
 
 export * from "./creditLedger";
