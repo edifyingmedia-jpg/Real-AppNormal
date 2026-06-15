@@ -1,6 +1,7 @@
-// frontend/components/builder/registry/types.ts
+import React from 'react';
 
 export interface ComponentDefinition {
   type: string;
-  render: (props: any, children: React.ReactNode) => JSX.Element;
+  // Use React.ReactElement to avoid relying on the global JSX namespace
+  render: (props: any, children: React.ReactNode) => React.ReactElement;
 }
