@@ -2,49 +2,46 @@
 // MEMBERSHIP PLANS (PAID + FREE)
 // ===============================
 
-export const MEMBERSHIP_PLANS = [
-  {
+export const YEARLY_BONUS_MULTIPLIER = 1.2; // 20% bonus
+
+export const PLANS = {
+  free_tier: {
     id: "free_tier",
     name: "Free Tier",
-    price: 0,
-    interval: "one_time",
-    credits: 10, // one-time only
-    priceId: null, // no Stripe checkout for free tier
+    description: "Basic access with 10 one-time credits",
+    monthlyPriceCents: 0,
+    yearlyPriceCents: 0,
+    monthlyCredits: 0,
+    yearlyCredits: 10,
+    priceIdMonthly: null,
+    priceIdYearly: null,
     isFree: true,
   },
-  {
-    id: "creator_monthly",
-    name: "Creator Monthly",
-    price: 12.99,
-    interval: "month",
-    credits: 100,
-    priceId: process.env.STRIPE_PRICE_CREATOR_MONTHLY!,
+
+  creator: {
+    id: "creator",
+    name: "Creator",
+    description: "For individual creators",
+    monthlyPriceCents: 1299,
+    yearlyPriceCents: 12900,
+    monthlyCredits: 100,
+    yearlyCredits: 1440, // 12 months + 20%
+    priceIdMonthly: process.env.STRIPE_PRICE_CREATOR_MONTHLY!,
+    priceIdYearly: process.env.STRIPE_PRICE_CREATOR_YEARLY!,
   },
-  {
-    id: "creator_yearly",
-    name: "Creator Yearly",
-    price: 129,
-    interval: "year",
-    credits: 1440, // 12 months + 20%
-    priceId: process.env.STRIPE_PRICE_CREATOR_YEARLY!,
+
+  studio: {
+    id: "studio",
+    name: "Studio",
+    description: "For teams and power users",
+    monthlyPriceCents: 2999,
+    yearlyPriceCents: 29900,
+    monthlyCredits: 500,
+    yearlyCredits: 7200, // 12 months + 20%
+    priceIdMonthly: process.env.STRIPE_PRICE_STUDIO_MONTHLY!,
+    priceIdYearly: process.env.STRIPE_PRICE_STUDIO_YEARLY!,
   },
-  {
-    id: "studio_monthly",
-    name: "Studio Monthly",
-    price: 29.99,
-    interval: "month",
-    credits: 500, // UPDATED
-    priceId: process.env.STRIPE_PRICE_STUDIO_MONTHLY!,
-  },
-  {
-    id: "studio_yearly",
-    name: "Studio Yearly",
-    price: 299,
-    interval: "year",
-    credits: 7200, // 12 months + 20%
-    priceId: process.env.STRIPE_PRICE_STUDIO_YEARLY!,
-  },
-];
+};
 
 // ===============================
 // CREDIT BUNDLES
@@ -86,7 +83,7 @@ export function getCreditsForPriceId(priceId: string | null) {
       return 1440;
 
     case process.env.STRIPE_PRICE_STUDIO_MONTHLY:
-      return 500; // UPDATED
+      return 500;
 
     case process.env.STRIPE_PRICE_STUDIO_YEARLY:
       return 7200;
@@ -110,6 +107,5 @@ export function getCreditsForPriceId(priceId: string | null) {
 // ===============================
 
 export function getFreeTierCredits(userHasClaimedFreeTier: boolean) {
-  if (userHasClaimedFreeTier) return 0;
-  return 10; // one-time only
+  return userHasClaimedFreeTier ? 0 : 10;
 }
