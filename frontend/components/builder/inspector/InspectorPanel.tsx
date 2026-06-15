@@ -13,7 +13,8 @@ interface Node {
 export default function InspectorPanel() {
   const { selectedNodeId, tree, setTree, history, setHistory } = useBuilderState();
 
-  const selectedNode = findNode(tree, selectedNodeId);
+  // FIX: Only call findNode if selectedNodeId is truthy (not null/undefined)
+  const selectedNode = selectedNodeId ? findNode(tree, selectedNodeId) : null;
 
   const updateProp = (key: string, value: string) => {
     if (!selectedNodeId) return;
