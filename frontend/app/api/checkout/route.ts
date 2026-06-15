@@ -9,7 +9,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: Request) {
   try {
-    const { priceId } = await req.json();
+    const formData = await req.formData();
+    const priceId = formData.get("priceId")?.toString();
 
     if (!priceId) {
       return NextResponse.json(
@@ -18,25 +19,18 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing/success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing/cancel`,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=true`,
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.redirect(session.url!, 303);
   } catch (err: any) {
-    console.error("Stripe checkout error:", err);
+    console.error("Checkout error:", err);
     return NextResponse.json(
-      { error: err.message },
+      { error: err.message || "Checkout failed" },
       { status: 500 }
     );
   }
