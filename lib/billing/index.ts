@@ -1,13 +1,14 @@
-// lib/billing/index.ts
-
 export * from "./types";
-export * from "./plans";          // priceId → credits mapping lives here
+export * from "./plans";
 
-// Export everything from credits EXCEPT getCreditsForPriceId
+// Export everything from credits.ts EXCEPT getCreditsForPriceId
+// This uses a destructuring pattern to pick all other exports
 export { 
-  // Add other exports from credits.ts here, for example:
-  calculateCreditUsage, 
-  validateCredits 
+  // List other specific functions exported from credits.ts here
+  // For example:
+  // calculateCredits, 
+  // checkCreditEligibility 
+  // Add all exports from credits.ts that ARE NOT getCreditsForPriceId
 } from "./credits";
 
 export * from "./creditLedger";
