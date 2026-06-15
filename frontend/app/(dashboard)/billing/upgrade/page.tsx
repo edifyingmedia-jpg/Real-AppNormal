@@ -3,8 +3,8 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { getPlan, getStripePriceId } from "@/lib/billing/utils";
-import { PLANS } from "@/lib/billing/plans";
+import { getPlan, getStripePriceId } from "@/frontend/lib/billing/utils";
+import { PLANS } from "@/frontend/lib/billing/plans";
 
 export default function UpgradePage() {
   const params = useSearchParams();
