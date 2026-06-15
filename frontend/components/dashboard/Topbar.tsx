@@ -1,5 +1,3 @@
-// frontend/components/dashboard/Topbar.tsx
-
 "use client";
 
 import { useState } from "react";
