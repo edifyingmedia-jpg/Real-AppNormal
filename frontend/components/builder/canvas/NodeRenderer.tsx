@@ -2,6 +2,7 @@
 
 "use client";
 
+import React from "react";
 import { BuilderNode, useBuilderState } from "../state/BuilderState";
 
 export default function NodeRenderer() {
@@ -30,21 +31,20 @@ function RenderNode({ node }: { node: BuilderNode }) {
     setSelectedNodeId(node.id);
   };
 
-  // Basic element mapping (expand later)
-  const Element = node.type as keyof JSX.IntrinsicElements;
+  const elementType = node.type || "div";
 
   return (
     <div
       onClick={handleClick}
-      className={`relative ${
-        isSelected ? "ring-2 ring-blue-500" : ""
-      }`}
+      className={`relative ${isSelected ? "ring-2 ring-blue-500" : ""}`}
     >
-      <Element {...node.props}>
-        {node.children?.map((child) => (
-          <RenderNode key={child.id} node={child} />
-        ))}
-      </Element>
+      {React.createElement(
+        elementType,
+        { ...node.props },
+        node.children?.map((child) =>
+          typeof child === "string" ? child : <RenderNode key={child.id} node={child} />
+        )
+      )}
     </div>
   );
 }
